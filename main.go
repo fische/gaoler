@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	if err := cmd.App.Run(os.Args); err != nil {
+	if err := cmd.Gaoler.Run(os.Args); err != nil {
 		log.WithError(err).Fatal("Error while running CLI.")
 	}
 }

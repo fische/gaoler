@@ -5,15 +5,15 @@ import (
 	"github.com/jawher/mow.cli"
 )
 
-//App is the CLI of Goaler
-var App = cli.App("goaler", "A Go package manager")
+//Gaoler is the CLI of Gaoler
+var Gaoler = cli.App("goaler", "A Go package manager")
 
 func init() {
-	App.Spec = "[-v]"
+	Gaoler.Spec = "[-v]"
 
-	verbose := App.Bool(cli.BoolOpt{Name: "v verbose", Value: false, Desc: "Enable verbose mode"})
+	verbose := Gaoler.Bool(cli.BoolOpt{Name: "v verbose", Value: false, Desc: "Enable verbose mode"})
 
-	App.Before = func() {
+	Gaoler.Before = func() {
 		if *verbose {
 			log.SetLevel(log.DebugLevel)
 		} else {
@@ -21,7 +21,7 @@ func init() {
 		}
 	}
 
-	App.Action = func() {
-		App.PrintLongHelp()
+	Gaoler.Action = func() {
+		Gaoler.PrintLongHelp()
 	}
 }
