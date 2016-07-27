@@ -3,15 +3,31 @@ package project
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func isValidFile(path string) bool {
 	return filepath.Ext(path) == ".go"
 }
 
+func isValidGoFile(path string) bool {
+	return isValidFile(path) && !strings.HasSuffix(path, "_test.go")
+}
+
 func isValidDir(path string) bool {
 	name := filepath.Base(path)
 	return name != ".git" && name != "vendor"
+}
+
+func skipDirExcept(exceptions ...string) func(path string) bool {
+	return func(path string) bool {
+		for _, v := range exceptions {
+			if v == path {
+				return true
+			}
+		}
+		return false
+	}
 }
 
 func skipDir(_ string) bool {

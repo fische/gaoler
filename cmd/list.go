@@ -18,13 +18,19 @@ func init() {
 			for {
 				select {
 				case dep := <-deps:
-					log.Infof("%+v", dep)
+					if dep == nil {
+						return
+					}
+					log.Infof("%+v", dep.Path.Value)
 				case err := <-errch:
-					if e, ok := err.(*project.ErrorMessage); ok {
+					if err == nil {
+						return
+					} else if e, ok := err.(*project.ErrorMessage); ok {
 						log.WithError(e.Err).WithFields(log.Fields(e.Fields)).Error(e.Message)
 					} else {
-						log.WithError(err).Error("Could get imports")
+						log.WithError(err).Error("Could not get imports")
 					}
+					return
 				}
 			}
 		}
