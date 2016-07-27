@@ -1,4 +1,4 @@
-package pkg
+package project
 
 import (
 	"go/ast"
@@ -12,6 +12,18 @@ import (
 type Import struct {
 	*ast.ImportSpec
 	*build.Package
+}
+
+//NewImport creates a new `Import` and retrieves `build.Package` from `i`
+func NewImport(i *ast.ImportSpec) (*Import, error) {
+	p, err := build.Import(strings.Replace(i.Path.Value, "\"", "", -1), "", build.FindOnly)
+	if err != nil {
+		return nil, err
+	}
+	return &Import{
+		ImportSpec: i,
+		Package:    p,
+	}, nil
 }
 
 //GetImports lists imports from file at `filepath`
@@ -28,16 +40,4 @@ func GetImports(filepath string) ([]*ast.ImportSpec, error) {
 		imports = append(imports, i)
 	}
 	return imports, nil
-}
-
-//NewImport creates a new `Import` and retrieves `build.Package` from `i`
-func NewImport(i *ast.ImportSpec) (*Import, error) {
-	p, err := build.Import(strings.Replace(i.Path.Value, "\"", "", -1), "", build.FindOnly)
-	if err != nil {
-		return nil, err
-	}
-	return &Import{
-		ImportSpec: i,
-		Package:    p,
-	}, nil
 }
