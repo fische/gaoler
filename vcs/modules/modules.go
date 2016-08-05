@@ -3,6 +3,7 @@ package modules
 import (
 	"github.com/fische/vcs"
 	"github.com/fische/vcs/errors"
+	"github.com/fische/vcs/modules/git"
 )
 
 var impl = make(map[string]vcs.VCS)
@@ -33,4 +34,5 @@ func GetVCS(vcsName string) (vcs.VCS, bool) {
 
 func init() {
 	//Register modules here
+	Register("git", &git.Git{})
 }
