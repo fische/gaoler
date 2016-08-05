@@ -8,6 +8,7 @@ type VCS interface {
 	Open(path string) (Repository, error)
 }
 
+//CloneAtRevision clones repository from `remote`
 func CloneAtRevision(v VCS, path, remote, revision string) (Repository, error) {
 	r, err := v.New(path)
 	if err != nil {
