@@ -12,7 +12,6 @@ func init() {
 	Gaoler.Command("list", "List imports from your project", func(cmd *cli.Cmd) {
 		cmd.Action = func() {
 			//TODO Take something else than PWD
-			//TODO Check if vendor or testdata directory
 			p := project.New(os.Getenv("PWD"))
 			deps, errch := p.GetDependencies()
 			for {
@@ -21,7 +20,7 @@ func init() {
 					if dep == nil {
 						return
 					}
-					log.Infof("%+v", dep.Path.Value)
+					log.Infof("%s", dep.Name)
 				case err := <-errch:
 					if err == nil {
 						return

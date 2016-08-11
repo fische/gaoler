@@ -33,9 +33,12 @@ func New(root string) *Project {
 	}
 }
 
+//TODO Only walk through root directory and follow dependencies
+//TODO Clean this function
+
 //GetDependencies gets all dependencies of the project
-func (p Project) GetDependencies() (<-chan *Import, <-chan error) {
-	out := make(chan *Import)
+func (p Project) GetDependencies() (<-chan *Dependency, <-chan error) {
+	out := make(chan *Dependency)
 	errch := make(chan error, 1)
 	go func() {
 		defer close(out)
@@ -58,17 +61,17 @@ func (p Project) GetDependencies() (<-chan *Import, <-chan error) {
 					return
 				}
 				for _, i := range imports {
-					if !in(strings.Replace(i.Path.Value, "\"", "", -1), pseudoPackages) { //Check if this import is not a pseudo package
-						s, err := NewImport(i)
+					if !in(GetName(i), pseudoPackages) { //Check if this import is not a pseudo package
+						s, err := NewDependency(i)
 						if err != nil {
 							errch <- NewErrorMessage(err).WithField("import", i.Path.Value).
 								WithField("directory", directories[it]).
 								WithMessage("Could create new import")
 							return
-						} else if _, ok := m[i.Path.Value]; !s.Goroot && !ok { //Filter packages from stdlib
+						} else if _, ok := m[i.Path.Value]; !s.Package.Goroot && !ok { //Filter packages from stdlib
 							m[i.Path.Value] = empty{}
-							directories = append(directories, s.Dir)
-							if !strings.HasPrefix(s.Dir, p.Root) { //Do not send imports from the same project
+							directories = append(directories, s.Package.Dir)
+							if !strings.HasPrefix(s.Package.Dir, p.Root) { //Do not send imports from the same project
 								out <- s
 							}
 						}

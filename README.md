@@ -5,6 +5,7 @@ A Go package manager
 ## TODO
 
 **Clean this TODO list**
+**Clean code (split it into more functions and modules)**
 
 ### Assumptions
 
