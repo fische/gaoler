@@ -4,6 +4,8 @@ A Go package manager
 
 ## TODO
 
+**Clean this TODO list**
+
 ### Assumptions
 
 * gaoler is executed in the directory where the `main` package is located
@@ -13,9 +15,6 @@ A Go package manager
 * list:
   - list all imports (even subimports)
 * save:
-  - copy (without vendor, testdata and .git directoryies) :
-    - go get, checkout, remove unused (default)
-
   - if it's not a repo, print warning
   - if it does not have any remote, print warning
 * install:
