@@ -9,11 +9,17 @@ type VCS interface {
 }
 
 //CloneAtRevision clones repository from `remote`
-func CloneAtRevision(v VCS, path, remote, revision string) (Repository, error) {
+func CloneAtRevision(v VCS, path, revision string, remotes []Remote) (Repository, error) {
 	r, err := v.New(path)
 	if err != nil {
 		return nil, err
-	} else if err = r.Fetch(remote); err != nil {
+	}
+	for _, remote := range remotes {
+		if err = r.AddRemote(remote); err != nil {
+			return nil, err
+		}
+	}
+	if err = r.Fetch(); err != nil {
 		return nil, err
 	} else if err = r.Checkout(revision); err != nil {
 		return nil, err

@@ -1,6 +1,6 @@
 package git
 
-import "github.com/fische/vcs"
+import "github.com/fische/gaoler/vcs"
 
 //Git implements `vcs.VCS` for git
 type Git struct{}

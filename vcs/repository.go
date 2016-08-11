@@ -4,8 +4,13 @@ package vcs
 type Repository interface {
 	//GetRevision returns the current revision of the repository
 	GetRevision() (string, error)
+	//GetRemotes returns repository remotes
+	GetRemotes() ([]Remote, error)
+
+	//AddRemote adds given remote to the repository
+	AddRemote(remote Remote) error
 	//Fetch fetches repository from `remote`
-	Fetch(remote string) error
+	Fetch() error
 	//Checkout checks repository out to `revision`
 	Checkout(revision string) error
 }

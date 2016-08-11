@@ -1,9 +1,9 @@
 package modules
 
 import (
-	"github.com/fische/vcs"
-	"github.com/fische/vcs/errors"
-	"github.com/fische/vcs/modules/git"
+	"github.com/fische/gaoler/errors"
+	"github.com/fische/gaoler/vcs"
+	"github.com/fische/gaoler/vcs/modules/git"
 )
 
 var impl = make(map[string]vcs.VCS)

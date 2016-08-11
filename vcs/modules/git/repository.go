@@ -3,8 +3,10 @@ package git
 import (
 	"os"
 	"os/exec"
+	"regexp"
 
-	"github.com/fische/vcs"
+	"github.com/fische/gaoler/vcs"
+	"github.com/fische/gaoler/vcs/errors"
 )
 
 //Repository represents a git repository
@@ -12,7 +14,13 @@ type Repository struct {
 	Path string
 }
 
-const cmd = "git"
+const (
+	cmd = "git"
+)
+
+var (
+	remoteRegexp = regexp.MustCompile("(.+?)\\s+(.+)\\s+\\((push|fetch)\\)")
+)
 
 //InitRepository inits a new Git repository at `path`
 func InitRepository(path string, bare bool) (vcs.Repository, error) {
@@ -72,14 +80,74 @@ func (r Repository) GetRevision() (string, error) {
 	return string(rev[:len(rev)-1]), nil
 }
 
+//GetRemotes returns remote address of the repository
+func (r Repository) GetRemotes() ([]vcs.Remote, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	} else if err = os.Chdir(r.Path); err != nil {
+		return nil, err
+	}
+	var list []byte
+	if list, err = exec.Command(cmd, "remote", "-v").Output(); err != nil {
+		return nil, err
+	} else if err = os.Chdir(dir); err != nil {
+		return nil, err
+	}
+	lines := remoteRegexp.FindAllString(string(list), -1)
+	remotes := make(map[string]vcs.Remote, len(lines))
+	for _, line := range lines {
+		res := remoteRegexp.FindStringSubmatch(line)
+		var (
+			remote vcs.Remote
+			ok     bool
+		)
+		if remote, ok = remotes[res[1]]; !ok {
+			remotes[res[1]] = &Remote{
+				Name: res[1],
+				URL:  res[2],
+			}
+			remote = remotes[res[1]]
+		}
+		if res[3] == "fetch" {
+			remote.(*Remote).Type &= fetch
+		} else if res[3] == "push" {
+			remote.(*Remote).Type &= push
+		}
+	}
+	var ret []vcs.Remote
+	for _, v := range remotes {
+		ret = append(ret, v)
+	}
+	return ret, nil
+}
+
+//AddRemote adds given remote to the repository
+func (r Repository) AddRemote(remote vcs.Remote) error {
+	gitRemote, ok := remote.(*Remote)
+	if !ok {
+		return errors.ErrNotRightRemote
+	}
+	if dir, err := os.Getwd(); err != nil {
+		return err
+	} else if err = os.Chdir(r.Path); err != nil {
+		return err
+	} else if err = exec.Command(cmd, "remote", "add", gitRemote.Name, gitRemote.URL).Run(); err != nil {
+		return err
+	} else if err = os.Chdir(dir); err != nil {
+		return err
+	}
+	return nil
+}
+
 //Fetch fetches repository from `remote`
-func (r Repository) Fetch(remote string) error {
+func (r Repository) Fetch() error {
 	dir, err := os.Getwd()
 	if err != nil {
 		return err
 	} else if err = os.Chdir(r.Path); err != nil {
 		return err
-	} else if err = exec.Command(cmd, "fetch", remote).Run(); err != nil {
+	} else if err = exec.Command(cmd, "fetch", "--all").Run(); err != nil {
 		return err
 	} else if err = os.Chdir(dir); err != nil {
 		return err

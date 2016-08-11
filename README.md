@@ -14,7 +14,7 @@ A Go package manager
 
 * list:
   - list all imports (even subimports)
-* save:
+* vendor:
   - if it's not a repo, print warning
   - if it does not have any remote, print warning
 * install:
