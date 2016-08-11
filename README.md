@@ -2,14 +2,12 @@
 
 A Go package manager
 
-## TODO
+## V0.1
 
-### V0.1
+* [ ] **clean code (split it into more functions and modules)**
+* [ ] find `main` package automatically
 
-* **clean code (split it into more functions and modules)**
-* find `main` package automatically
-
-#### Commands
+### Commands
 
 - [ ] vendor:
   - if it's not a repo, print warning
@@ -21,7 +19,7 @@ A Go package manager
   - if not pinned, update according to changes in current GOPATH (check if commit is after)
   - if pinned, check if branch exist, store current state(branch/commit/whatever) for rolling back, checkout to branch, pull, rollback
 
-#### Config
+### Config
 
 * [ ] store only :
   - package name
@@ -29,29 +27,31 @@ A Go package manager
   - commit
   - pinned branch
 
-#### Options
-
-* [ ] dev dependencies
-
-#### VCS
+### VCS
 
 * [x] Module :
   - git
 * [ ] Use package `git2go` with `libgit2` for the implementation of Git.
 
-### Ideas
+### Options
 
-* use git sparse-checkout to retrieve only files that we need
-* add scripts
+* [ ] dev dependencies
 
-#### Commands
+## Suggestion box
+
+### Commands
 
 * restore:
   - restore GOPATH using list of dependencies from `gaoler.json`
 
-#### VCS
+### VCS
 
 * Modules :
   - hg
   - bzr
   - svn
+* use git sparse-checkout to retrieve only files that we need
+
+### Config
+
+* add scripts
