@@ -21,11 +21,29 @@ A Go package manager
 
 ### Config
 
-* [ ] store only :
-  - package name
-  - remotes
-  - commit
-  - pinned branch
+* Proposition :
+
+```json
+{
+  "dependencies": {
+    "github.com/fische/gaoler": {
+      "remote": "https://github.com/fische/gaoler",
+      "vcs": "git",
+      "revision": "revision",
+      "branch": "master",
+      "packages": [
+        "github.com/fische/gaoler",
+        "github.com/fische/gaoler/cmd",
+        "github.com/fische/gaoler/errors",
+        "github.com/fische/gaoler/project",
+        "github.com/fische/gaoler/vcs",
+        "github.com/fische/gaoler/vcs/modules",
+        "github.com/fische/gaoler/vcs/modules/git",
+      ]
+    }
+  }
+}
+```
 
 ### VCS
 

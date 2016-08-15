@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"regexp"
 
+	"github.com/fische/gaoler/errors"
 	"github.com/fische/gaoler/vcs"
-	"github.com/fische/gaoler/vcs/errors"
 )
 
 //Repository represents a git repository
