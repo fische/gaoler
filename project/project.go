@@ -1,84 +1,75 @@
 package project
 
-import "strings"
+import (
+	"go/parser"
+	"go/token"
+	"os"
+	"strings"
 
-//TODO Function to get project's root directory
+	"github.com/fische/gaoler/pkg"
+)
 
-type empty struct{}
-
-//Project represents a Go project
 type Project struct {
 	Root string
 }
 
-var (
-	pseudoPackages = []string{
-		"C",
-	}
-)
-
-func in(elem string, arr []string) bool {
-	for _, v := range arr {
-		if v == elem {
-			return true
-		}
-	}
-	return false
+func GetProjectRootFromDir(dir string) string {
+	return dir
 }
 
-//New creates a new `Project`
 func New(root string) *Project {
 	return &Project{
 		Root: root,
 	}
 }
 
-//TODO Only walk through root directory and follow dependencies
-//TODO Clean this function
+func OpenCurrent() (*Project, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	return &Project{
+		Root: GetProjectRootFromDir(wd),
+	}, nil
+}
 
-//GetDependencies gets all dependencies of the project
-func (p Project) GetDependencies() (<-chan *Dependency, <-chan error) {
-	out := make(chan *Dependency)
-	errch := make(chan error, 1)
-	go func() {
-		defer close(out)
-		defer close(errch)
-		directories := []string{p.Root}
-		m := make(map[string]empty) //Set of dependencies
-		for it := 0; it < len(directories); it++ {
-			var (
-				filepaths <-chan string
-			)
-			if it == 0 { //Walk through project directory, without filtering test files
-				filepaths = walk(directories[it], isValidFile, isValidDir, sendError(errch))
-			} else { //Walk though other directories, skipping subdirectories
-				filepaths = walk(directories[it], isValidGoFile, skipDirExcept(directories[it]), sendError(errch))
-			}
-			for file := range filepaths {
-				imports, err := GetImports(file)
-				if err != nil {
-					errch <- NewErrorMessage(err).WithField("file", file).WithMessage("Could not get imports from file")
-					return
-				}
-				for _, i := range imports {
-					if !in(GetName(i), pseudoPackages) { //Check if this import is not a pseudo package
-						s, err := NewDependency(i)
-						if err != nil {
-							errch <- NewErrorMessage(err).WithField("import", i.Path.Value).
-								WithField("directory", directories[it]).
-								WithMessage("Could create new import")
-							return
-						} else if _, ok := m[i.Path.Value]; !s.Package.Goroot && !ok { //Filter packages from stdlib
-							m[i.Path.Value] = empty{}
-							directories = append(directories, s.Package.Dir)
-							if !strings.HasPrefix(s.Package.Dir, p.Root) { //Do not send imports from the same project
-								out <- s
-							}
-						}
+func noVendor(file os.FileInfo) bool {
+	return !strings.HasSuffix(file.Name(), "_test.go")
+}
+
+func listPackages(directories []string, packages *pkg.Set, fset *token.FileSet) ([]*pkg.Package, error) {
+	if packages == nil {
+		packages = pkg.NewSet()
+	}
+	if fset == nil {
+		fset = token.NewFileSet()
+	}
+	var nextDirectories []string
+	for _, dir := range directories {
+		pkgs, err := parser.ParseDir(fset, dir, noVendor, parser.ImportsOnly)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range pkgs {
+			for _, file := range p.Files {
+				for _, imp := range file.Imports {
+					if pkg.IsPseudoPackage(imp) {
+						continue
+					} else if item, added, err := packages.Add(imp); err != nil {
+						return nil, err
+					} else if added && !item.IsRoot() {
+						nextDirectories = append(nextDirectories, item.Path())
 					}
 				}
 			}
 		}
-	}()
-	return out, errch
+	}
+	if len(nextDirectories) > 0 {
+		return listPackages(nextDirectories, packages, fset)
+	}
+	return packages.GetPackages(), nil
+}
+
+func (p Project) ListDependencies() ([]*pkg.Package, error) {
+	return listPackages([]string{p.Root}, nil, nil)
 }

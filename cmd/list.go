@@ -10,27 +10,24 @@ import (
 
 func init() {
 	Gaoler.Command("list", "List imports from your project", func(cmd *cli.Cmd) {
+		cmd.Spec = "[ROOT]"
+
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Errorf("Cannot get working directory : %v", err)
+			cli.Exit(ExitFailure)
+		}
+		root := cmd.StringArg("ROOT", project.GetProjectRootFromDir(wd), "Root directory from a project")
+
 		cmd.Action = func() {
-			//TODO Take something else than PWD
-			p := project.New(os.Getenv("PWD"))
-			deps, errch := p.GetDependencies()
-			for {
-				select {
-				case dep := <-deps:
-					if dep == nil {
-						return
-					}
-					log.Infof("%s", dep.Name)
-				case err := <-errch:
-					if err == nil {
-						return
-					} else if e, ok := err.(*project.ErrorMessage); ok {
-						log.WithError(e.Err).WithFields(log.Fields(e.Fields)).Error(e.Message)
-					} else {
-						log.WithError(err).Error("Could not get imports")
-					}
-					return
-				}
+			p := project.New(*root)
+			deps, err := p.ListDependencies()
+			if err != nil {
+				log.Errorf("Could not get dependencies : %v", err)
+				cli.Exit(ExitFailure)
+			}
+			for _, dep := range deps {
+				log.Printf("%+v", dep.Name())
 			}
 		}
 	})

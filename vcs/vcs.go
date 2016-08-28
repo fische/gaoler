@@ -1,14 +1,10 @@
 package vcs
 
-//VCS represents a Version Control System
 type VCS interface {
-	//New creates a new repository at `path`
 	New(path string) (Repository, error)
-	//Open opens an existing repository at `path`
 	Open(path string) (Repository, error)
 }
 
-//CloneAtRevision clones repository from `remote`
 func CloneAtRevision(v VCS, path, revision string, remotes []Remote) (Repository, error) {
 	r, err := v.New(path)
 	if err != nil {

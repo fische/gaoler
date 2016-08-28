@@ -9,7 +9,6 @@ import (
 	"github.com/fische/gaoler/vcs"
 )
 
-//Repository represents a git repository
 type Repository struct {
 	Path string
 }
@@ -22,7 +21,6 @@ var (
 	remoteRegexp = regexp.MustCompile("(.+?)\\s+(.+)\\s+\\((push|fetch)\\)")
 )
 
-//InitRepository inits a new Git repository at `path`
 func InitRepository(path string, bare bool) (vcs.Repository, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -44,7 +42,6 @@ func InitRepository(path string, bare bool) (vcs.Repository, error) {
 	}, nil
 }
 
-//OpenRepository opens a new git repository using `path`
 func OpenRepository(path string) (vcs.Repository, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -63,7 +60,6 @@ func OpenRepository(path string) (vcs.Repository, error) {
 	}, nil
 }
 
-//GetRevision returns the current revision of the repository
 func (r Repository) GetRevision() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -80,7 +76,6 @@ func (r Repository) GetRevision() (string, error) {
 	return string(rev[:len(rev)-1]), nil
 }
 
-//GetRemotes returns remote address of the repository
 func (r Repository) GetRemotes() ([]vcs.Remote, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -122,11 +117,10 @@ func (r Repository) GetRemotes() ([]vcs.Remote, error) {
 	return ret, nil
 }
 
-//AddRemote adds given remote to the repository
 func (r Repository) AddRemote(remote vcs.Remote) error {
 	gitRemote, ok := remote.(*Remote)
 	if !ok {
-		return errors.ErrNotRightRemote
+		return errors.ErrNotValidRemote
 	}
 	if dir, err := os.Getwd(); err != nil {
 		return err
@@ -140,7 +134,6 @@ func (r Repository) AddRemote(remote vcs.Remote) error {
 	return nil
 }
 
-//Fetch fetches repository from `remote`
 func (r Repository) Fetch() error {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -155,7 +148,6 @@ func (r Repository) Fetch() error {
 	return nil
 }
 
-//Checkout checks repository out to `revision`
 func (r Repository) Checkout(revision string) error {
 	dir, err := os.Getwd()
 	if err != nil {

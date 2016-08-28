@@ -8,13 +8,10 @@ import (
 
 var impl = make(map[string]vcs.VCS)
 
-//Register registers `v` at `name`
 func Register(name string, v vcs.VCS) {
 	impl[name] = v
 }
 
-//GetRepository opens an existing `Repository` at `path`
-//using the appropriate registered `vcs.VCS`
 func GetRepository(path string) (vcsName string, repo vcs.Repository, err error) {
 	var v vcs.VCS
 	for vcsName, v = range impl {
@@ -26,13 +23,12 @@ func GetRepository(path string) (vcsName string, repo vcs.Repository, err error)
 	return "", nil, errors.ErrNotValidRepository
 }
 
-//GetVCS returns the `vcs.VCS` registered using `vcsName`
 func GetVCS(vcsName string) (vcs.VCS, bool) {
 	f, ok := impl[vcsName]
 	return f, ok
 }
 
 func init() {
-	//Register modules here
+	// Register modules here
 	Register("git", &git.Git{})
 }
