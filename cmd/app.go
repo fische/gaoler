@@ -5,8 +5,12 @@ import (
 	"github.com/jawher/mow.cli"
 )
 
-//Gaoler is the CLI of Gaoler
-var Gaoler = cli.App("goaler", "A Go package manager")
+var (
+	Gaoler = cli.App("goaler", "A Go package manager")
+
+	ExitSuccess = 0
+	ExitFailure = 1
+)
 
 func init() {
 	Gaoler.Spec = "[-v]"

@@ -2,47 +2,75 @@
 
 A Go package manager
 
-## TODO
-
-### Assumptions
-
-* gaoler is executed in the directory where the `main` package is located
+## V0.1
 
 ### Commands
 
-* list:
-  - list all imports (even subimports)
-* save:
-  - copy (without vendor, testdata and .git directoryies) :
-    - go get, checkout, remove unused (default)
-
+- [ ] vendor:
   - if it's not a repo, print warning
   - if it does not have any remote, print warning
-* install:
-  - go get in vendor/
-  - checkout
-  - remove .git, vendor and testdata of each repo
-* update:
-  - update on GOPATH
-  - if not pinned, update according to changes in current GOPATH (check if commit is after)
-  - if pinned, check if branch exist, store current state(branch/commit/whatever) for rolling back, checkout to branch, pull, rollback
-* test:
-
-### Config
-
-* store only :
-  - package name
-  - commit
-  - pinned branch
-
-### Options
-
-* dev dependencies
-* scripts
+  - clean unnecessary directories
 
 ### VCS
 
-* Use package `git2go` with `libgit2` for the implementation of Git.
+* [x] Module :
+  - git
+* [ ] Use package `git2go` with `libgit2` for the implementation of Git.
 
-### Ideas
-* use git sparse-checkout to save
+## Suggestion box
+
+### Logger - Error Packages
+
+### Config
+
+* Proposition :
+
+```json
+{
+  "dependencies": {
+    "github.com/fische/gaoler": {
+      "remote": "https://github.com/fische/gaoler",
+      "vcs": "git",
+      "revision": "revision",
+      "branch": "master",
+      "packages": [
+        "github.com/fische/gaoler",
+        "github.com/fische/gaoler/cmd",
+        "github.com/fische/gaoler/errors",
+        "github.com/fische/gaoler/project",
+        "github.com/fische/gaoler/vcs",
+        "github.com/fische/gaoler/vcs/modules",
+        "github.com/fische/gaoler/vcs/modules/git",
+      ]
+    }
+  }
+}
+```
+
+### Commands
+
+* Vendor:
+  - by default, it reads `gaoler.json` to retrieve all dependencies
+  - add option to regenerate list of dependencies and save it to `gaoler.json`
+* Restore:
+  - Restore GOPATH using list of dependencies from `gaoler.json`
+* Update:
+  - update on GOPATH
+  - if not pinned, update according to changes in current GOPATH (check if commit is after)
+  - if pinned, check if branch exist, store current state(branch/commit/whatever) for rolling back, checkout to branch, pull, rollback
+
+
+### VCS
+
+* Modules :
+  - hg
+  - bzr
+  - svn
+* Use git sparse-checkout to retrieve only files that we need
+* Support whatever remote name
+
+### Options
+
+* Dev dependencies
+* Scripts
+* Find `main` package automatically
