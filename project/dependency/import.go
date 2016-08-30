@@ -1,4 +1,4 @@
-package pkg
+package dependency
 
 import "go/ast"
 

@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	Gaoler.Command("list", "List imports from your project", func(cmd *cli.Cmd) {
+	Gaoler.Command("list", "List dependencies of your project", func(cmd *cli.Cmd) {
 		cmd.Spec = "[ROOT]"
 
 		wd, err := os.Getwd()
@@ -23,11 +23,13 @@ func init() {
 			p := project.New(*root)
 			deps, err := p.ListDependencies()
 			if err != nil {
-				log.Errorf("Could not get dependencies : %v", err)
+				log.Error(err)
 				cli.Exit(ExitFailure)
 			}
 			for _, dep := range deps {
-				log.Printf("%+v", dep.Name())
+				for _, pkg := range dep.Packages {
+					log.Printf("%s", pkg.Name())
+				}
 			}
 		}
 	})

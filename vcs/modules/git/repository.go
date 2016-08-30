@@ -1,11 +1,11 @@
 package git
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"regexp"
 
-	"github.com/fische/gaoler/errors"
 	"github.com/fische/gaoler/vcs"
 )
 
@@ -14,7 +14,8 @@ type Repository struct {
 }
 
 const (
-	cmd = "git"
+	cmd               = "git"
+	defaultRemoteName = "origin"
 )
 
 var (
@@ -32,8 +33,8 @@ func InitRepository(path string, bare bool) (vcs.Repository, error) {
 	if bare {
 		args = append(args, "--bare")
 	}
-	if err = exec.Command(cmd, args...).Run(); err != nil {
-		return nil, err
+	if o, err := exec.Command(cmd, args...).CombinedOutput(); err != nil {
+		return nil, errors.New(string(o))
 	} else if err = os.Chdir(dir); err != nil {
 		return nil, err
 	}
@@ -50,8 +51,8 @@ func OpenRepository(path string) (vcs.Repository, error) {
 		return nil, err
 	}
 	var p []byte
-	if p, err = exec.Command(cmd, "rev-parse", "--show-toplevel").Output(); err != nil {
-		return nil, err
+	if p, err = exec.Command(cmd, "rev-parse", "--show-toplevel").CombinedOutput(); err != nil {
+		return nil, errors.New(string(p))
 	} else if err = os.Chdir(dir); err != nil {
 		return nil, err
 	}
@@ -68,66 +69,44 @@ func (r Repository) GetRevision() (string, error) {
 		return "", err
 	}
 	var rev []byte
-	if rev, err = exec.Command(cmd, "describe", "--always").Output(); err != nil {
-		return "", err
+	if rev, err = exec.Command(cmd, "describe", "--always").CombinedOutput(); err != nil {
+		return "", errors.New(string(rev))
 	} else if err = os.Chdir(dir); err != nil {
 		return "", err
 	}
 	return string(rev[:len(rev)-1]), nil
 }
 
-func (r Repository) GetRemotes() ([]vcs.Remote, error) {
+func (r Repository) GetRemote() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return "", err
 	} else if err = os.Chdir(r.Path); err != nil {
-		return nil, err
+		return "", err
 	}
 	var list []byte
-	if list, err = exec.Command(cmd, "remote", "-v").Output(); err != nil {
-		return nil, err
+	if list, err = exec.Command(cmd, "remote", "-v").CombinedOutput(); err != nil {
+		return "", errors.New(string(list))
 	} else if err = os.Chdir(dir); err != nil {
-		return nil, err
+		return "", err
 	}
 	lines := remoteRegexp.FindAllString(string(list), -1)
-	remotes := make(map[string]vcs.Remote, len(lines))
 	for _, line := range lines {
 		res := remoteRegexp.FindStringSubmatch(line)
-		var (
-			remote vcs.Remote
-			ok     bool
-		)
-		if remote, ok = remotes[res[1]]; !ok {
-			remotes[res[1]] = &Remote{
-				Name: res[1],
-				URL:  res[2],
-			}
-			remote = remotes[res[1]]
-		}
-		if res[3] == "fetch" {
-			remote.(*Remote).Type &= fetch
-		} else if res[3] == "push" {
-			remote.(*Remote).Type &= push
+		if res[1] == defaultRemoteName {
+			return res[2], nil
 		}
 	}
-	var ret []vcs.Remote
-	for _, v := range remotes {
-		ret = append(ret, v)
-	}
-	return ret, nil
+	return "", nil
 }
 
-func (r Repository) AddRemote(remote vcs.Remote) error {
-	gitRemote, ok := remote.(*Remote)
-	if !ok {
-		return errors.ErrNotValidRemote
-	}
+func (r Repository) AddRemote(remote string) error {
 	if dir, err := os.Getwd(); err != nil {
 		return err
 	} else if err = os.Chdir(r.Path); err != nil {
 		return err
-	} else if err = exec.Command(cmd, "remote", "add", gitRemote.Name, gitRemote.URL).Run(); err != nil {
-		return err
+	} else if o, err := exec.Command(cmd, "remote", "add", defaultRemoteName, remote).CombinedOutput(); err != nil {
+		return errors.New(string(o))
 	} else if err = os.Chdir(dir); err != nil {
 		return err
 	}
@@ -140,8 +119,8 @@ func (r Repository) Fetch() error {
 		return err
 	} else if err = os.Chdir(r.Path); err != nil {
 		return err
-	} else if err = exec.Command(cmd, "fetch", "--all").Run(); err != nil {
-		return err
+	} else if o, err := exec.Command(cmd, "fetch", "--all").CombinedOutput(); err != nil {
+		return errors.New(string(o))
 	} else if err = os.Chdir(dir); err != nil {
 		return err
 	}
@@ -154,10 +133,30 @@ func (r Repository) Checkout(revision string) error {
 		return err
 	} else if err = os.Chdir(r.Path); err != nil {
 		return err
-	} else if err = exec.Command(cmd, "checkout", revision).Run(); err != nil {
-		return err
+	} else if o, err := exec.Command(cmd, "checkout", revision).CombinedOutput(); err != nil {
+		return errors.New(string(o))
 	} else if err = os.Chdir(dir); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (r Repository) GetPath() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	} else if err = os.Chdir(r.Path); err != nil {
+		return "", err
+	}
+	var path []byte
+	if path, err = exec.Command(cmd, "rev-parse", "--show-toplevel").CombinedOutput(); err != nil {
+		return "", errors.New(string(path))
+	} else if err = os.Chdir(dir); err != nil {
+		return "", err
+	}
+	return string(path[:len(path)-1]), nil
+}
+
+func (r Repository) GetVCSName() string {
+	return vcsName
 }

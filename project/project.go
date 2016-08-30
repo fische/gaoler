@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fische/gaoler/pkg"
+	"github.com/fische/gaoler/project/dependency"
 )
 
 type Project struct {
@@ -37,9 +37,9 @@ func noVendor(file os.FileInfo) bool {
 	return !strings.HasSuffix(file.Name(), "_test.go")
 }
 
-func listPackages(directories []string, packages *pkg.Set, fset *token.FileSet) ([]*pkg.Package, error) {
-	if packages == nil {
-		packages = pkg.NewSet()
+func listPackages(directories []string, dependencies *dependency.Set, fset *token.FileSet) ([]*dependency.Dependency, error) {
+	if dependencies == nil {
+		dependencies = dependency.NewSet()
 	}
 	if fset == nil {
 		fset = token.NewFileSet()
@@ -53,9 +53,9 @@ func listPackages(directories []string, packages *pkg.Set, fset *token.FileSet) 
 		for _, p := range pkgs {
 			for _, file := range p.Files {
 				for _, imp := range file.Imports {
-					if pkg.IsPseudoPackage(imp) {
+					if dependency.IsPseudoPackage(imp) {
 						continue
-					} else if item, added, err := packages.Add(imp); err != nil {
+					} else if item, added, err := dependencies.Add(imp); err != nil {
 						return nil, err
 					} else if added && !item.IsRoot() {
 						nextDirectories = append(nextDirectories, item.Path())
@@ -65,11 +65,11 @@ func listPackages(directories []string, packages *pkg.Set, fset *token.FileSet) 
 		}
 	}
 	if len(nextDirectories) > 0 {
-		return listPackages(nextDirectories, packages, fset)
+		return listPackages(nextDirectories, dependencies, fset)
 	}
-	return packages.GetPackages(), nil
+	return dependencies.GetDependencies(), nil
 }
 
-func (p Project) ListDependencies() ([]*pkg.Package, error) {
+func (p Project) ListDependencies() ([]*dependency.Dependency, error) {
 	return listPackages([]string{p.Root}, nil, nil)
 }
