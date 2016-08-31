@@ -11,23 +11,29 @@ import (
 func CleanVendor(vendorPath string, dependencies []*dependency.Dependency) error {
 	for _, dep := range dependencies {
 		root := filepath.Clean(fmt.Sprintf("%s/%s/", vendorPath, dep.RootPackage))
+		removeRootFiles := !dep.HasPackage(dep.RootPackage)
 		err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 			if info.IsDir() {
-				rel, err := filepath.Rel(vendorPath, path)
+				var rel string
+				rel, err = filepath.Rel(vendorPath, path)
 				if err != nil {
 					return err
 				}
-				if !(dep.HasPackage(rel)) && rel != dep.RootPackage {
-					err := os.RemoveAll(path)
+				if rel != dep.RootPackage && !dep.HasPackage(rel) {
+					err = os.RemoveAll(path)
 					if err != nil {
 						return err
 					}
 					return filepath.SkipDir
 				}
-				//TODO Remove files from root
+			} else if removeRootFiles && path == filepath.Clean(fmt.Sprintf("%s/%s", root, info.Name())) {
+				err = os.Remove(path)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		})
