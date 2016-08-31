@@ -20,7 +20,14 @@ const (
 )
 
 func RemoveTestFiles(info os.FileInfo) CleanOption {
-	if strings.HasSuffix(info.Name(), "_test.go") {
+	if !info.IsDir() && strings.HasSuffix(info.Name(), "_test.go") {
+		return Remove
+	}
+	return Pass
+}
+
+func KeepOnlyGoFiles(info os.FileInfo) CleanOption {
+	if !info.IsDir() && !strings.HasSuffix(info.Name(), ".go") {
 		return Remove
 	}
 	return Pass

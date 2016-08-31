@@ -40,7 +40,7 @@ func init() {
 			for _, dep := range deps {
 				if !p.HasLocalDependency(dep) {
 					log.Printf("Cloning of %s...", dep.RootPackage)
-					err = dep.Vendor(p.Vendor, dependency.RemoveTestFiles)
+					err = dep.Vendor(p.Vendor, dependency.KeepOnlyGoFiles, dependency.RemoveTestFiles)
 					if err != nil {
 						log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
