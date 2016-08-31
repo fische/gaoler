@@ -52,6 +52,11 @@ func init() {
 				}
 				log.Printf("Successful clone of %s", dep.RootPackage)
 			}
+			err = project.CleanVendor(vendor, deps)
+			if err != nil {
+				log.Errorf("Could nto clean vendor directory : %v", err)
+				cli.Exit(ExitFailure)
+			}
 		}
 	})
 }

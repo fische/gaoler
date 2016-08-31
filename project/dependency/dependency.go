@@ -46,12 +46,19 @@ func New(p *Package) (*Dependency, error) {
 }
 
 func (d *Dependency) Add(p *Package) (added bool) {
-	for _, pkg := range d.Packages {
-		if pkg.Name() == p.Name() {
-			return
-		}
+	if d.HasPackage(p.Path()) {
+		return
 	}
 	added = true
 	d.Packages = append(d.Packages, p)
 	return
+}
+
+func (d Dependency) HasPackage(packagePath string) bool {
+	for _, pkg := range d.Packages {
+		if pkg.Name() == packagePath {
+			return true
+		}
+	}
+	return false
 }

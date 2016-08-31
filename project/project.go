@@ -37,6 +37,7 @@ func noVendor(file os.FileInfo) bool {
 	return !strings.HasSuffix(file.Name(), "_test.go")
 }
 
+//TODO Do not add dependencies to packages of the project itself
 func listPackages(directories []string, dependencies *dependency.Set, fset *token.FileSet) ([]*dependency.Dependency, error) {
 	if dependencies == nil {
 		dependencies = dependency.NewSet()
