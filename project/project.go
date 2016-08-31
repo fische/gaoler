@@ -4,13 +4,15 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fische/gaoler/project/dependency"
 )
 
 type Project struct {
-	Root string
+	Root   string
+	Vendor string
 }
 
 func GetProjectRootFromDir(dir string) string {
@@ -19,7 +21,8 @@ func GetProjectRootFromDir(dir string) string {
 
 func New(root string) *Project {
 	return &Project{
-		Root: root,
+		Root:   root,
+		Vendor: filepath.Clean(root + "/vendor/"),
 	}
 }
 

@@ -1,6 +1,10 @@
 package dependency
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/fische/gaoler/vcs"
 	"github.com/fische/gaoler/vcs/modules"
 )
@@ -47,4 +51,48 @@ func (d Dependency) HasPackage(packagePath string) bool {
 		}
 	}
 	return false
+}
+
+func (d Dependency) Vendor(vendorRoot string) error {
+	v, _ := modules.GetVCS(d.Repository.GetVCSName())
+	path := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.RootPackage))
+	_, err := vcs.CloneRepository(v, path, d.Repository)
+	if err != nil {
+		return err
+	}
+	return d.CleanVendor(vendorRoot)
+}
+
+func (d Dependency) CleanVendor(vendorRoot string) error {
+	root := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.RootPackage))
+	removeRootFiles := !d.HasPackage(d.RootPackage)
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			var rel string
+			rel, err = filepath.Rel(vendorRoot, path)
+			if err != nil {
+				return err
+			}
+			if rel != d.RootPackage && !d.HasPackage(rel) {
+				err = os.RemoveAll(path)
+				if err != nil {
+					return err
+				}
+				return filepath.SkipDir
+			}
+		} else if removeRootFiles && path == filepath.Clean(fmt.Sprintf("%s/%s", root, info.Name())) {
+			err = os.Remove(path)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
