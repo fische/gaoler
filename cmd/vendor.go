@@ -42,17 +42,19 @@ func init() {
 				cli.Exit(ExitFailure)
 			}
 			for _, dep := range deps {
-				v, _ := modules.GetVCS(dep.Repository.GetVCSName())
-				path := filepath.Clean(fmt.Sprintf("%s/%s/", vendor, dep.RootPackage))
-				log.Printf("Cloning of %s...", dep.RootPackage)
-				_, err = vcs.CloneRepository(v, path, dep.Repository)
-				if err != nil {
-					log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage, err)
-					cli.Exit(ExitFailure)
+				if !p.HasLocalDependency(dep) {
+					v, _ := modules.GetVCS(dep.Repository.GetVCSName())
+					path := filepath.Clean(fmt.Sprintf("%s/%s/", vendor, dep.RootPackage))
+					log.Printf("Cloning of %s...", dep.RootPackage)
+					_, err = vcs.CloneRepository(v, path, dep.Repository)
+					if err != nil {
+						log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage, err)
+						cli.Exit(ExitFailure)
+					}
+					log.Printf("Successful clone of %s", dep.RootPackage)
 				}
-				log.Printf("Successful clone of %s", dep.RootPackage)
 			}
-			err = project.CleanVendor(vendor, deps)
+			err = p.CleanVendor(vendor, deps)
 			if err != nil {
 				log.Errorf("Could nto clean vendor directory : %v", err)
 				cli.Exit(ExitFailure)

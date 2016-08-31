@@ -1,13 +1,20 @@
 package dependency
 
 import (
+	"errors"
 	"go/ast"
 	"go/build"
+	"path/filepath"
+	"strings"
 )
 
 type Package struct {
 	*build.Package
 }
+
+var (
+	srcDirs = build.Default.SrcDirs()
+)
 
 func GetPackageFromPath(packagePath string) (*Package, error) {
 	var (
@@ -24,6 +31,19 @@ func GetPackageFromPath(packagePath string) (*Package, error) {
 
 func GetPackageFromImport(imp *ast.ImportSpec) (*Package, error) {
 	return GetPackageFromPath(GetNameFromImport(imp))
+}
+
+func GetPackagePathFromPath(dir string) (string, error) {
+	for _, src := range srcDirs {
+		if strings.HasPrefix(dir, src) {
+			rel, err := filepath.Rel(src, dir)
+			if err != nil {
+				return "", err
+			}
+			return rel, nil
+		}
+	}
+	return "", errors.New("Could not find package in src directories")
 }
 
 func (p Package) Name() string {
