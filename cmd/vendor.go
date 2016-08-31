@@ -5,6 +5,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/fische/gaoler/project"
+	"github.com/fische/gaoler/project/dependency"
 	"github.com/jawher/mow.cli"
 )
 
@@ -39,7 +40,7 @@ func init() {
 			for _, dep := range deps {
 				if !p.HasLocalDependency(dep) {
 					log.Printf("Cloning of %s...", dep.RootPackage)
-					err = dep.Vendor(p.Vendor)
+					err = dep.Vendor(p.Vendor, dependency.RemoveTestFiles)
 					if err != nil {
 						log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
