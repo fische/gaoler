@@ -4,13 +4,15 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fische/gaoler/project/dependency"
 )
 
 type Project struct {
-	Root string
+	Root   string
+	Vendor string
 }
 
 func GetProjectRootFromDir(dir string) string {
@@ -19,7 +21,8 @@ func GetProjectRootFromDir(dir string) string {
 
 func New(root string) *Project {
 	return &Project{
-		Root: root,
+		Root:   root,
+		Vendor: filepath.Clean(root + "/vendor/"),
 	}
 }
 
@@ -37,7 +40,7 @@ func noVendor(file os.FileInfo) bool {
 	return !strings.HasSuffix(file.Name(), "_test.go")
 }
 
-func listPackages(directories []string, dependencies *dependency.Set, fset *token.FileSet) ([]*dependency.Dependency, error) {
+func (p Project) listPackages(directories []string, dependencies *dependency.Set, fset *token.FileSet) ([]*dependency.Dependency, error) {
 	if dependencies == nil {
 		dependencies = dependency.NewSet()
 	}
@@ -50,8 +53,8 @@ func listPackages(directories []string, dependencies *dependency.Set, fset *toke
 		if err != nil {
 			return nil, err
 		}
-		for _, p := range pkgs {
-			for _, file := range p.Files {
+		for _, pkg := range pkgs {
+			for _, file := range pkg.Files {
 				for _, imp := range file.Imports {
 					if dependency.IsPseudoPackage(imp) {
 						continue
@@ -65,11 +68,19 @@ func listPackages(directories []string, dependencies *dependency.Set, fset *toke
 		}
 	}
 	if len(nextDirectories) > 0 {
-		return listPackages(nextDirectories, dependencies, fset)
+		return p.listPackages(nextDirectories, dependencies, fset)
 	}
 	return dependencies.GetDependencies(), nil
 }
 
 func (p Project) ListDependencies() ([]*dependency.Dependency, error) {
-	return listPackages([]string{p.Root}, nil, nil)
+	return p.listPackages([]string{p.Root}, nil, nil)
+}
+
+func (p Project) HasLocalDependency(d *dependency.Dependency) bool {
+	path, err := d.Repository.GetPath()
+	if err != nil {
+		return false
+	}
+	return path == p.Root
 }
