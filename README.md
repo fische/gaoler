@@ -6,9 +6,7 @@ A Go package manager
 
 ### Commands
 
-- [ ] vendor:
-  - if it's not a repo, print warning
-  - if it does not have any remote, print warning
+- [x] vendor:
   - clean unnecessary directories
 
 ### VCS

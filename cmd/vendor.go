@@ -11,7 +11,7 @@ import (
 
 func init() {
 	Gaoler.Command("vendor", "Vendor dependencies of your project", func(cmd *cli.Cmd) {
-		cmd.Spec = "[ROOT]"
+		cmd.Spec = "[-t] [ROOT]"
 
 		wd, err := os.Getwd()
 		if err != nil {
@@ -19,6 +19,7 @@ func init() {
 			cli.Exit(ExitFailure)
 		}
 		root := cmd.StringArg("ROOT", project.GetProjectRootFromDir(wd), "Root directory from a project")
+		keepTests := cmd.BoolOpt("t test", false, "Keep test files")
 
 		cmd.Action = func() {
 			p := project.New(*root)
@@ -37,10 +38,16 @@ func init() {
 				log.Errorf("Could not create vendor directory : %v", err)
 				cli.Exit(ExitFailure)
 			}
+			var opts []dependency.CleanCheck
+			if *keepTests {
+				opts = append(opts, dependency.KeepTestFiles)
+			} else {
+				opts = append(opts, dependency.RemoveTestFiles)
+			}
 			for _, dep := range deps {
 				if !p.HasLocalDependency(dep) {
 					log.Printf("Cloning of %s...", dep.RootPackage)
-					err = dep.Vendor(p.Vendor, dependency.KeepOnlyGoFiles, dependency.RemoveTestFiles)
+					err = dep.Vendor(p.Vendor, opts...)
 					if err != nil {
 						log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
