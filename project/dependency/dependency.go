@@ -1,38 +1,40 @@
 package dependency
 
 import (
+	"github.com/fische/gaoler/project/dependency/pkg"
 	"github.com/fische/gaoler/vcs"
 	"github.com/fische/gaoler/vcs/modules"
 )
 
 type Dependency struct {
-	RootPackage string
+	RootPackage string `json:"-"`
 	Repository  vcs.Repository
-	Packages    []*Package
+	Packages    []*pkg.Package
 }
 
-func New(p *Package) (*Dependency, error) {
-	repo, err := modules.OpenRepository(p.Path())
-	if err != nil {
+func New(p *pkg.Package) (*Dependency, error) {
+	var (
+		pkgPath string
+		path    string
+		repo    vcs.Repository
+		err     error
+	)
+	if repo, err = modules.OpenRepository(p.Dir); err != nil {
 		return nil, err
-	}
-	path, err := repo.GetPath()
-	if err != nil {
+	} else if path, err = repo.GetPath(); err != nil {
 		return nil, err
-	}
-	pkgPath, err := GetPackagePathFromPath(path)
-	if err != nil {
+	} else if pkgPath, err = pkg.GetPackagePath(path); err != nil {
 		return nil, err
 	}
 	return &Dependency{
-		Repository:  repo,
-		Packages:    []*Package{p},
 		RootPackage: pkgPath,
+		Repository:  repo,
+		Packages:    []*pkg.Package{p},
 	}, nil
 }
 
-func (d *Dependency) Add(p *Package) (added bool) {
-	if d.HasPackage(p.Name()) {
+func (d *Dependency) Add(p *pkg.Package) (added bool) {
+	if d.HasPackage(p.Path) {
 		return
 	}
 	added = true
@@ -42,7 +44,7 @@ func (d *Dependency) Add(p *Package) (added bool) {
 
 func (d Dependency) HasPackage(packagePath string) bool {
 	for _, pkg := range d.Packages {
-		if pkg.Name() == packagePath {
+		if pkg.Path == packagePath {
 			return true
 		}
 	}

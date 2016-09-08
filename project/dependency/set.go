@@ -1,63 +1,57 @@
 package dependency
 
 import (
-	"go/ast"
 	"strings"
+
+	"github.com/fische/gaoler/project/dependency/pkg"
 )
 
-type Set struct {
-	Dependencies map[string]*Dependency
+type Set map[string]*Dependency
+
+func NewSet() Set {
+	return make(map[string]*Dependency)
 }
 
-func NewSet() *Set {
-	return &Set{
-		Dependencies: make(map[string]*Dependency),
-	}
-}
-
-func (s Set) GetDependencyOf(pkg *Package) *Dependency {
-	p := pkg.Name()
-	for root, dep := range s.Dependencies {
-		if strings.HasPrefix(p, root) {
+func (s Set) GetDependencyOf(p *pkg.Package) *Dependency {
+	for root, dep := range s {
+		if strings.HasPrefix(p.Path, root) {
 			return dep
 		}
 	}
 	return nil
 }
 
-func (s Set) ContainsDependencyOf(pkg *Package) bool {
-	p := pkg.Path()
-	for root := range s.Dependencies {
-		if strings.HasPrefix(p, root) {
+func (s Set) ContainsDependencyOf(p *pkg.Package) bool {
+	for root := range s {
+		if strings.HasPrefix(p.Path, root) {
 			return true
 		}
 	}
 	return false
 }
 
-func (s *Set) Add(imp *ast.ImportSpec) (pkg *Package, added bool, err error) {
-	pkg, err = GetPackageFromImport(imp)
-	if err != nil || pkg.IsRoot() {
+func (s Set) Add(p *pkg.Package, ignoreVendor bool) (added bool, err error) {
+	if p.Root {
 		return
 	}
-	if dep := s.GetDependencyOf(pkg); dep != nil {
-		added = dep.Add(pkg)
+	if dep := s.GetDependencyOf(p); dep != nil {
+		added = dep.Add(p)
 	} else {
 		var dep *Dependency
-		dep, err = New(pkg)
+		dep, err = New(p)
 		if err != nil {
 			return
 		}
-		s.Dependencies[dep.RootPackage] = dep
+		s[dep.RootPackage] = dep
 		added = true
 	}
 	return
 }
 
 func (s Set) GetDependencies() []*Dependency {
-	deps := make([]*Dependency, len(s.Dependencies))
+	deps := make([]*Dependency, len(s))
 	idx := 0
-	for _, dep := range s.Dependencies {
+	for _, dep := range s {
 		deps[idx] = dep
 		idx++
 	}

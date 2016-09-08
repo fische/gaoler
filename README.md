@@ -6,13 +6,15 @@ A Go package manager
 
 ### Commands
 
-- [x] list
-- [x] vendor:
-  - clean unnecessary directories
+* List:
+  - Lists all dependencies of the project, even local ones
+* Vendor:
+  - Vendor all dependencies of the project (not local ones)
+  - Clean unnecessary directories (.git and unused directories)
 
 ### VCS
 
-* [x] Module :
+* Module :
   - git
 
 ## Next release (0.2)
@@ -46,6 +48,11 @@ A Go package manager
 }
 ```
 
+### Commands
+
+* Vendor:
+  - Add possibility to only vendor new imported packages
+
 ## Suggestion box
 
 ### Packages
@@ -55,9 +62,6 @@ A Go package manager
 
 ### Commands
 
-* Vendor:
-  - by default, it reads `gaoler.json` to retrieve all dependencies
-  - add option to regenerate list of dependencies and save it to `gaoler.json`
 * Restore:
   - Restore GOPATH using list of dependencies from `gaoler.json`
 * Update:

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/fische/gaoler/project/dependency"
+	"github.com/fische/gaoler/project/dependency/pkg"
 )
 
 type Project struct {
@@ -40,7 +41,7 @@ func noVendor(file os.FileInfo) bool {
 	return !strings.HasSuffix(file.Name(), "_test.go")
 }
 
-func (p Project) listPackages(directories []string, dependencies *dependency.Set, fset *token.FileSet) ([]*dependency.Dependency, error) {
+func (p Project) listPackages(directories []string, dependencies dependency.Set, fset *token.FileSet, ignoreVendor bool) (dependency.Set, error) {
 	if dependencies == nil {
 		dependencies = dependency.NewSet()
 	}
@@ -53,31 +54,33 @@ func (p Project) listPackages(directories []string, dependencies *dependency.Set
 		if err != nil {
 			return nil, err
 		}
-		for _, pkg := range pkgs {
-			for _, file := range pkg.Files {
+		for _, p := range pkgs {
+			for _, file := range p.Files {
 				for _, imp := range file.Imports {
-					if dependency.IsPseudoPackage(imp) {
+					if pkg.IsPseudoPackage(imp) {
 						continue
-					} else if item, added, err := dependencies.Add(imp); err != nil {
+					} else if p, err := pkg.GetFromImport(imp, ignoreVendor); err != nil {
 						return nil, err
-					} else if added && !item.IsRoot() {
-						nextDirectories = append(nextDirectories, item.Path())
+					} else if added, err := dependencies.Add(p, ignoreVendor); err != nil {
+						return nil, err
+					} else if added && !p.Root {
+						nextDirectories = append(nextDirectories, p.Dir)
 					}
 				}
 			}
 		}
 	}
 	if len(nextDirectories) > 0 {
-		return p.listPackages(nextDirectories, dependencies, fset)
+		return p.listPackages(nextDirectories, dependencies, fset, ignoreVendor)
 	}
-	return dependencies.GetDependencies(), nil
+	return dependencies, nil
 }
 
-func (p Project) ListDependencies() ([]*dependency.Dependency, error) {
-	return p.listPackages([]string{p.Root}, nil, nil)
+func (p Project) ListDependencies(ignoreVendor bool) (dependency.Set, error) {
+	return p.listPackages([]string{p.Root}, nil, nil, ignoreVendor)
 }
 
-func (p Project) HasLocalDependency(d *dependency.Dependency) bool {
+func (p Project) IsDependency(d *dependency.Dependency) bool {
 	path, err := d.Repository.GetPath()
 	if err != nil {
 		return false

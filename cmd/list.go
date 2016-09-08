@@ -21,14 +21,14 @@ func init() {
 
 		cmd.Action = func() {
 			p := project.New(*root)
-			deps, err := p.ListDependencies()
+			deps, err := p.ListDependencies(false)
 			if err != nil {
 				log.Error(err)
 				cli.Exit(ExitFailure)
 			}
 			for _, dep := range deps {
 				for _, pkg := range dep.Packages {
-					log.Printf("%s", pkg.Name())
+					log.Printf("%s", pkg.Path)
 				}
 			}
 		}

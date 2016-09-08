@@ -4,14 +4,23 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/fische/gaoler/config"
 	"github.com/fische/gaoler/project"
 	"github.com/fische/gaoler/project/dependency"
 	"github.com/jawher/mow.cli"
 )
 
+func cleanVendor(dir string) error {
+	err := os.RemoveAll(dir)
+	if err != nil {
+		return err
+	}
+	return os.MkdirAll(dir, 0775)
+}
+
 func init() {
 	Gaoler.Command("vendor", "Vendor dependencies of your project", func(cmd *cli.Cmd) {
-		cmd.Spec = "[-t] [ROOT]"
+		cmd.Spec = "[-t] [-s [-c]] [ROOT]"
 
 		wd, err := os.Getwd()
 		if err != nil {
@@ -20,22 +29,17 @@ func init() {
 		}
 		root := cmd.StringArg("ROOT", project.GetProjectRootFromDir(wd), "Root directory from a project")
 		keepTests := cmd.BoolOpt("t test", false, "Keep test files")
+		configPath := cmd.StringOpt("c config", "gaoler.json", "Path to the configuration file")
+		save := cmd.BoolOpt("s save", false, "Save vendored dependencies to CONFIG file")
 
 		cmd.Action = func() {
 			p := project.New(*root)
-			deps, err := p.ListDependencies()
+			deps, err := p.ListDependencies(true)
 			if err != nil {
 				log.Errorf("Could not get dependencies : %v", err)
 				cli.Exit(ExitFailure)
-			}
-			err = os.RemoveAll(p.Vendor)
-			if err != nil {
+			} else if err = cleanVendor(p.Vendor); err != nil {
 				log.Errorf("Could not clean vendor directory : %v", err)
-				cli.Exit(ExitFailure)
-			}
-			err = os.MkdirAll(p.Vendor, 0775)
-			if err != nil {
-				log.Errorf("Could not create vendor directory : %v", err)
 				cli.Exit(ExitFailure)
 			}
 			var opts []dependency.CleanCheck
@@ -45,7 +49,7 @@ func init() {
 				opts = append(opts, dependency.RemoveTestFiles)
 			}
 			for _, dep := range deps {
-				if !p.HasLocalDependency(dep) {
+				if !p.IsDependency(dep) {
 					log.Printf("Cloning of %s...", dep.RootPackage)
 					err = dep.Vendor(p.Vendor, opts...)
 					if err != nil {
@@ -53,6 +57,18 @@ func init() {
 						cli.Exit(ExitFailure)
 					}
 					log.Printf("Successful clone of %s", dep.RootPackage)
+				}
+			}
+			if *save {
+				cfg, err := config.NewProject(p, deps)
+				if err != nil {
+					log.Errorf("Could not create config from project : %v", err)
+					cli.Exit(ExitFailure)
+				}
+				err = cfg.Save(*configPath)
+				if err != nil {
+					log.Errorf("Could not save config : %v", err)
+					cli.Exit(ExitFailure)
 				}
 			}
 		}
