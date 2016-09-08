@@ -2,7 +2,7 @@
 
 A Go package manager
 
-## V0.1
+## Implemented
 
 ### Commands
 
@@ -15,15 +15,13 @@ A Go package manager
 * [x] Module :
   - git
 
-## Suggestion box
-
-### Packages
-
-* Logger
-* Error
+## Next release (0.2)
 
 ### Config
 
+* Unmarshal `Project` from `gaoler.json` (default)
+* Marshal `Project` to `gaoler.json` (default)
+* Add option to specify config path
 * Proposition :
 
 ```json
@@ -47,6 +45,13 @@ A Go package manager
   }
 }
 ```
+
+## Suggestion box
+
+### Packages
+
+* Logger
+* Error
 
 ### Commands
 
