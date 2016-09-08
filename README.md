@@ -55,6 +55,9 @@ A Go package manager
 
 ## Suggestion box
 
+* Write a clean documentation
+* Write tests for the whole projects (unit tests as well as E2E)
+
 ### Packages
 
 * Logger
