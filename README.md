@@ -6,6 +6,7 @@ A Go package manager
 
 ### Commands
 
+- [x] list
 - [x] vendor:
   - clean unnecessary directories
 
@@ -13,11 +14,13 @@ A Go package manager
 
 * [x] Module :
   - git
-* [ ] Use package `git2go` with `libgit2` for the implementation of Git.
 
 ## Suggestion box
 
-### Logger - Error Packages
+### Packages
+
+* Logger
+* Error
 
 ### Config
 
@@ -66,6 +69,8 @@ A Go package manager
   - svn
 * Use git sparse-checkout to retrieve only files that we need
 * Support whatever remote name
+
+* **Pending:** Use package `git2go` with `libgit2` for the implementation of Git.
 
 ### Options
 
