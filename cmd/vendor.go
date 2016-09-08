@@ -4,7 +4,6 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/fische/gaoler/config"
 	"github.com/fische/gaoler/project"
 	"github.com/fische/gaoler/project/dependency"
 	"github.com/jawher/mow.cli"
@@ -33,8 +32,7 @@ func init() {
 		save := cmd.BoolOpt("s save", false, "Save vendored dependencies to CONFIG file")
 
 		cmd.Action = func() {
-			p := project.New(*root)
-			deps, err := p.ListDependencies(true)
+			p, err := project.New(*root, true)
 			if err != nil {
 				log.Errorf("Could not get dependencies : %v", err)
 				cli.Exit(ExitFailure)
@@ -48,7 +46,7 @@ func init() {
 			} else {
 				opts = append(opts, dependency.RemoveTestFiles)
 			}
-			for _, dep := range deps {
+			for _, dep := range p.Dependencies {
 				if !p.IsDependency(dep) {
 					log.Printf("Cloning of %s...", dep.RootPackage)
 					err = dep.Vendor(p.Vendor, opts...)
@@ -60,12 +58,7 @@ func init() {
 				}
 			}
 			if *save {
-				cfg, err := config.NewProject(p, deps)
-				if err != nil {
-					log.Errorf("Could not create config from project : %v", err)
-					cli.Exit(ExitFailure)
-				}
-				err = cfg.Save(*configPath)
+				err = p.Save(*configPath)
 				if err != nil {
 					log.Errorf("Could not save config : %v", err)
 					cli.Exit(ExitFailure)

@@ -12,47 +12,56 @@ import (
 )
 
 type Project struct {
-	Root   string
-	Vendor string
+	Root   string `json:"-"`
+	Vendor string `json:"-"`
+
+	Name string
+
+	Dependencies dependency.Set
 }
 
 func GetProjectRootFromDir(dir string) string {
 	return dir
 }
 
-func New(root string) *Project {
-	return &Project{
-		Root:   root,
-		Vendor: filepath.Clean(root + "/vendor/"),
+func New(root string, ignoreVendor bool) (*Project, error) {
+	name, err := pkg.GetPackagePath(root)
+	if err != nil {
+		return nil, err
 	}
+	p := &Project{
+		Root:         root,
+		Vendor:       filepath.Clean(root + "/vendor/"),
+		Name:         name,
+		Dependencies: make(dependency.Set),
+	}
+	if err = p.listPackages([]string{root}, nil, ignoreVendor); err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
-func OpenCurrent() (*Project, error) {
+func OpenCurrent(ignoreVendor bool) (*Project, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
-	return &Project{
-		Root: GetProjectRootFromDir(wd),
-	}, nil
+	return New(GetProjectRootFromDir(wd), ignoreVendor)
 }
 
-func noVendor(file os.FileInfo) bool {
+func noTest(file os.FileInfo) bool {
 	return !strings.HasSuffix(file.Name(), "_test.go")
 }
 
-func (p Project) listPackages(directories []string, dependencies dependency.Set, fset *token.FileSet, ignoreVendor bool) (dependency.Set, error) {
-	if dependencies == nil {
-		dependencies = dependency.NewSet()
-	}
+func (project Project) listPackages(directories []string, fset *token.FileSet, ignoreVendor bool) error {
 	if fset == nil {
 		fset = token.NewFileSet()
 	}
 	var nextDirectories []string
 	for _, dir := range directories {
-		pkgs, err := parser.ParseDir(fset, dir, noVendor, parser.ImportsOnly)
+		pkgs, err := parser.ParseDir(fset, dir, noTest, parser.ImportsOnly)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, p := range pkgs {
 			for _, file := range p.Files {
@@ -60,9 +69,9 @@ func (p Project) listPackages(directories []string, dependencies dependency.Set,
 					if pkg.IsPseudoPackage(imp) {
 						continue
 					} else if p, err := pkg.GetFromImport(imp, ignoreVendor); err != nil {
-						return nil, err
-					} else if added, err := dependencies.Add(p, ignoreVendor); err != nil {
-						return nil, err
+						return err
+					} else if added, err := project.Dependencies.Add(p, ignoreVendor); err != nil {
+						return err
 					} else if added && !p.Root {
 						nextDirectories = append(nextDirectories, p.Dir)
 					}
@@ -71,19 +80,12 @@ func (p Project) listPackages(directories []string, dependencies dependency.Set,
 		}
 	}
 	if len(nextDirectories) > 0 {
-		return p.listPackages(nextDirectories, dependencies, fset, ignoreVendor)
+		return project.listPackages(nextDirectories, fset, ignoreVendor)
 	}
-	return dependencies, nil
+	return nil
 }
 
-func (p Project) ListDependencies(ignoreVendor bool) (dependency.Set, error) {
-	return p.listPackages([]string{p.Root}, nil, nil, ignoreVendor)
-}
-
-func (p Project) IsDependency(d *dependency.Dependency) bool {
-	path, err := d.Repository.GetPath()
-	if err != nil {
-		return false
-	}
-	return path == p.Root
+func (project Project) IsDependency(d *dependency.Dependency) bool {
+	return d.RootPackage == project.Name ||
+		strings.HasPrefix(d.RootPackage, project.Name)
 }

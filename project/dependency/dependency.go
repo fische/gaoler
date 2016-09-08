@@ -8,29 +8,38 @@ import (
 
 type Dependency struct {
 	RootPackage string `json:"-"`
-	Repository  vcs.Repository
-	Packages    []*pkg.Package
+
+	repository vcs.Repository
+	VCS        string
+	Revision   string
+	Remote     string
+	Branch     string `json:",omitempty"`
+
+	Packages []*pkg.Package
 }
 
 func New(p *pkg.Package) (*Dependency, error) {
 	var (
-		pkgPath string
-		path    string
-		repo    vcs.Repository
-		err     error
+		path string
+		err  error
+
+		dep = &Dependency{
+			Packages: []*pkg.Package{p},
+		}
 	)
-	if repo, err = modules.OpenRepository(p.Dir); err != nil {
+	if dep.repository, err = modules.OpenRepository(p.Dir); err != nil {
 		return nil, err
-	} else if path, err = repo.GetPath(); err != nil {
+	} else if path, err = dep.repository.GetPath(); err != nil {
 		return nil, err
-	} else if pkgPath, err = pkg.GetPackagePath(path); err != nil {
+	} else if dep.RootPackage, err = pkg.GetPackagePath(path); err != nil {
+		return nil, err
+	} else if dep.Remote, err = dep.repository.GetRemote(); err != nil {
+		return nil, err
+	} else if dep.Revision, err = dep.repository.GetRevision(); err != nil {
 		return nil, err
 	}
-	return &Dependency{
-		RootPackage: pkgPath,
-		Repository:  repo,
-		Packages:    []*pkg.Package{p},
-	}, nil
+	dep.VCS = dep.repository.GetVCSName()
+	return dep, nil
 }
 
 func (d *Dependency) Add(p *pkg.Package) (added bool) {

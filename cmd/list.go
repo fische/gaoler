@@ -20,13 +20,12 @@ func init() {
 		root := cmd.StringArg("ROOT", project.GetProjectRootFromDir(wd), "Root directory from a project")
 
 		cmd.Action = func() {
-			p := project.New(*root)
-			deps, err := p.ListDependencies(false)
+			p, err := project.New(*root, false)
 			if err != nil {
 				log.Error(err)
 				cli.Exit(ExitFailure)
 			}
-			for _, dep := range deps {
+			for _, dep := range p.Dependencies {
 				for _, pkg := range dep.Packages {
 					log.Printf("%s", pkg.Path)
 				}

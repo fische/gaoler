@@ -50,3 +50,7 @@ func GetPackagePath(dir string) (string, error) {
 	}
 	return "", errors.New("Could not find package in src directories")
 }
+
+func (p Package) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + p.Path + "\""), nil
+}
