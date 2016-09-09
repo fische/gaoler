@@ -34,7 +34,8 @@ func init() {
 					log.Errorf("Could not clean vendor directory : %v", err)
 					cli.Exit(ExitFailure)
 				}
-			} else if err := config.Setup(*configPath, false); err != nil {
+			}
+			if err := config.Setup(*configPath, *force); err != nil {
 				if err != nil {
 					log.Errorf("Could not setup config : %v", err)
 					cli.Exit(ExitFailure)
@@ -45,15 +46,15 @@ func init() {
 		cmd.Action = func() {
 			p, err := project.New(*root)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("Could not create a new project : %v", err)
 				cli.Exit(ExitFailure)
 			} else if err = config.Load(p); err != nil && err != io.EOF {
-				log.Error(err)
+				log.Errorf("Could not load config : %v", err)
 				cli.Exit(ExitFailure)
 			} else if err != nil {
 				p, err = project.NewWithDependencies(*root, *keepTests, false)
 				if err != nil {
-					log.Error(err)
+					log.Errorf("Could not create a new project : %v", err)
 					cli.Exit(ExitFailure)
 				}
 			}
