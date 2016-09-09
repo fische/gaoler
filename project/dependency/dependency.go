@@ -19,26 +19,14 @@ type Dependency struct {
 }
 
 func New(p *pkg.Package) (*Dependency, error) {
-	var (
-		path string
-		err  error
-
-		dep = &Dependency{
-			Packages: []*pkg.Package{p},
-		}
-	)
-	if dep.repository, err = modules.OpenRepository(p.Dir); err != nil {
-		return nil, err
-	} else if path, err = dep.repository.GetPath(); err != nil {
-		return nil, err
-	} else if dep.RootPackage, err = pkg.GetPackagePath(path); err != nil {
-		return nil, err
-	} else if dep.Remote, err = dep.repository.GetRemote(); err != nil {
-		return nil, err
-	} else if dep.Revision, err = dep.repository.GetRevision(); err != nil {
-		return nil, err
+	dep := &Dependency{
+		Packages: []*pkg.Package{p},
 	}
-	dep.VCS = dep.repository.GetVCSName()
+	if !p.IsVendored() {
+		dep.SetRepository(p)
+	} else {
+		dep.RootPackage = p.Path
+	}
 	return dep, nil
 }
 
@@ -48,6 +36,9 @@ func (d *Dependency) Add(p *pkg.Package) (added bool) {
 	}
 	added = true
 	d.Packages = append(d.Packages, p)
+	if d.repository == nil && !p.IsVendored() {
+		d.SetRepository(p)
+	}
 	return
 }
 
@@ -58,4 +49,33 @@ func (d Dependency) HasPackage(packagePath string) bool {
 		}
 	}
 	return false
+}
+
+func (d Dependency) IsVendored() bool {
+	for _, p := range d.Packages {
+		if !p.IsVendored() {
+			return false
+		}
+	}
+	return true
+}
+
+func (d *Dependency) SetRepository(p *pkg.Package) error {
+	var (
+		err  error
+		path string
+	)
+	if d.repository, err = modules.OpenRepository(p.Dir); err != nil {
+		return err
+	} else if path, err = d.repository.GetPath(); err != nil {
+		return err
+	} else if d.RootPackage, err = pkg.GetPackagePath(path); err != nil {
+		return err
+	} else if d.Remote, err = d.repository.GetRemote(); err != nil {
+		return err
+	} else if d.Revision, err = d.repository.GetRevision(); err != nil {
+		return err
+	}
+	d.VCS = d.repository.GetVCSName()
+	return nil
 }

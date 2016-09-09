@@ -1,6 +1,7 @@
 package dependency
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/fische/gaoler/project/dependency/pkg"
@@ -31,9 +32,6 @@ func (s Set) ContainsDependencyOf(p *pkg.Package) bool {
 }
 
 func (s Set) Add(p *pkg.Package, ignoreVendor bool) (added bool, err error) {
-	if p.Root {
-		return
-	}
 	if dep := s.GetDependencyOf(p); dep != nil {
 		added = dep.Add(p)
 	} else {
@@ -56,4 +54,21 @@ func (s Set) GetDependencies() []*Dependency {
 		idx++
 	}
 	return deps
+}
+
+func (s Set) UnmarshalJSON(data []byte) error {
+	m := make(map[string]json.RawMessage)
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+	for root, value := range m {
+		dep := &Dependency{
+			RootPackage: root,
+		}
+		if err := json.Unmarshal(value, dep); err != nil {
+			return err
+		}
+		s[root] = dep
+	}
+	return nil
 }

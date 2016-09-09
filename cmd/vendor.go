@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"io"
 	"os"
+	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/fische/gaoler/config"
 	"github.com/fische/gaoler/project"
 	"github.com/fische/gaoler/project/dependency"
 	"github.com/jawher/mow.cli"
@@ -19,26 +22,40 @@ func cleanVendor(dir string) error {
 
 func init() {
 	Gaoler.Command("vendor", "Vendor dependencies of your project", func(cmd *cli.Cmd) {
-		cmd.Spec = "[-t] [-s [-c]] [ROOT]"
+		cmd.Spec = "[-t] [-s] [-f]"
 
-		wd, err := os.Getwd()
-		if err != nil {
-			log.Errorf("Cannot get working directory : %v", err)
-			cli.Exit(ExitFailure)
-		}
-		root := cmd.StringArg("ROOT", project.GetProjectRootFromDir(wd), "Root directory from a project")
 		keepTests := cmd.BoolOpt("t test", false, "Keep test files")
-		configPath := cmd.StringOpt("c config", "gaoler.json", "Path to the configuration file")
 		save := cmd.BoolOpt("s save", false, "Save vendored dependencies to CONFIG file")
+		force := cmd.BoolOpt("f force", false, "Force the regeneration of the vendor directory")
+
+		cmd.Before = func() {
+			if *force {
+				if err := cleanVendor(filepath.Clean(*root + "/vendor/")); err != nil {
+					log.Errorf("Could not clean vendor directory : %v", err)
+					cli.Exit(ExitFailure)
+				}
+			} else if err := config.Setup(*configPath, false); err != nil {
+				if err != nil {
+					log.Errorf("Could not setup config : %v", err)
+					cli.Exit(ExitFailure)
+				}
+			}
+		}
 
 		cmd.Action = func() {
-			p, err := project.New(*root, true)
+			p, err := project.New(*root)
 			if err != nil {
-				log.Errorf("Could not get dependencies : %v", err)
+				log.Error(err)
 				cli.Exit(ExitFailure)
-			} else if err = cleanVendor(p.Vendor); err != nil {
-				log.Errorf("Could not clean vendor directory : %v", err)
+			} else if err = config.Load(p); err != nil && err != io.EOF {
+				log.Error(err)
 				cli.Exit(ExitFailure)
+			} else if err != nil {
+				p, err = project.NewWithDependencies(*root, *keepTests, false)
+				if err != nil {
+					log.Error(err)
+					cli.Exit(ExitFailure)
+				}
 			}
 			var opts []dependency.CleanCheck
 			if *keepTests {
@@ -47,7 +64,7 @@ func init() {
 				opts = append(opts, dependency.RemoveTestFiles)
 			}
 			for _, dep := range p.Dependencies {
-				if !p.IsDependency(dep) {
+				if !p.IsDependency(dep) && (*force || !dep.IsVendored()) {
 					log.Printf("Cloning of %s...", dep.RootPackage)
 					err = dep.Vendor(p.Vendor, opts...)
 					if err != nil {
@@ -58,7 +75,7 @@ func init() {
 				}
 			}
 			if *save {
-				err = p.Save(*configPath)
+				err = config.Save(p)
 				if err != nil {
 					log.Errorf("Could not save config : %v", err)
 					cli.Exit(ExitFailure)
