@@ -1,50 +1,81 @@
 package dependency
 
 import (
+	"github.com/fische/gaoler/project/dependency/pkg"
 	"github.com/fische/gaoler/vcs"
 	"github.com/fische/gaoler/vcs/modules"
 )
 
 type Dependency struct {
-	RootPackage string
-	Repository  vcs.Repository
-	Packages    []*Package
+	RootPackage string `json:"-"`
+
+	repository vcs.Repository
+	VCS        string
+	Revision   string
+	Remote     string
+	Branch     string `json:",omitempty"`
+
+	Packages []*pkg.Package
 }
 
-func New(p *Package) (*Dependency, error) {
-	repo, err := modules.OpenRepository(p.Path())
-	if err != nil {
-		return nil, err
+func New(p *pkg.Package) (*Dependency, error) {
+	dep := &Dependency{
+		Packages: []*pkg.Package{p},
 	}
-	path, err := repo.GetPath()
-	if err != nil {
-		return nil, err
+	if !p.IsVendored() {
+		dep.SetRepository(p)
+	} else {
+		dep.RootPackage = p.Path
 	}
-	pkgPath, err := GetPackagePathFromPath(path)
-	if err != nil {
-		return nil, err
-	}
-	return &Dependency{
-		Repository:  repo,
-		Packages:    []*Package{p},
-		RootPackage: pkgPath,
-	}, nil
+	return dep, nil
 }
 
-func (d *Dependency) Add(p *Package) (added bool) {
-	if d.HasPackage(p.Name()) {
+func (d *Dependency) Add(p *pkg.Package) (added bool) {
+	if d.HasPackage(p.Path) {
 		return
 	}
 	added = true
 	d.Packages = append(d.Packages, p)
+	if d.repository == nil && !p.IsVendored() {
+		d.SetRepository(p)
+	}
 	return
 }
 
 func (d Dependency) HasPackage(packagePath string) bool {
 	for _, pkg := range d.Packages {
-		if pkg.Name() == packagePath {
+		if pkg.Path == packagePath {
 			return true
 		}
 	}
 	return false
+}
+
+func (d Dependency) IsVendored() bool {
+	for _, p := range d.Packages {
+		if !p.IsVendored() {
+			return false
+		}
+	}
+	return true
+}
+
+func (d *Dependency) SetRepository(p *pkg.Package) error {
+	var (
+		err  error
+		path string
+	)
+	if d.repository, err = modules.OpenRepository(p.Dir); err != nil {
+		return err
+	} else if path, err = d.repository.GetPath(); err != nil {
+		return err
+	} else if d.RootPackage, err = pkg.GetPackagePath(path); err != nil {
+		return err
+	} else if d.Remote, err = d.repository.GetRemote(); err != nil {
+		return err
+	} else if d.Revision, err = d.repository.GetRevision(); err != nil {
+		return err
+	}
+	d.VCS = d.repository.GetVCSName()
+	return nil
 }
