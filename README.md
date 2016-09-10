@@ -45,7 +45,7 @@ Run 'goaler COMMAND --help' for more information on a command.
 * Module :
   - git
 
-### Config
+## Config
 
 * Scheme :
 
