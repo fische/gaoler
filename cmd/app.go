@@ -20,7 +20,7 @@ var (
 )
 
 func init() {
-	Gaoler.Spec = "[-v] [-c] [ROOT]"
+	Gaoler.Spec = "[-v] [--config=<config-file>] [ROOT]"
 
 	wd, err := os.Getwd()
 	if err != nil {
