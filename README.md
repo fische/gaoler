@@ -2,28 +2,28 @@
 
 A Go package manager
 
-## V0.1
+## Implemented
 
 ### Commands
 
-- [x] list
-- [x] vendor:
-  - clean unnecessary directories
+* List:
+  - Lists all dependencies of the project, even local ones
+* Vendor:
+  - Vendor all dependencies of the project (not local ones)
+  - Clean unnecessary directories (.git and unused directories)
 
 ### VCS
 
-* [x] Module :
+* Module :
   - git
 
-## Suggestion box
-
-### Packages
-
-* Logger
-* Error
+## Next release (0.2)
 
 ### Config
 
+* Unmarshal `Project` from `gaoler.json` (default)
+* Marshal `Project` to `gaoler.json` (default)
+* Add option to specify config path
 * Proposition :
 
 ```json
@@ -51,8 +51,20 @@ A Go package manager
 ### Commands
 
 * Vendor:
-  - by default, it reads `gaoler.json` to retrieve all dependencies
-  - add option to regenerate list of dependencies and save it to `gaoler.json`
+  - Add possibility to only vendor new imported packages
+
+## Suggestion box
+
+* Write a clean documentation
+* Write tests for the whole projects (unit tests as well as E2E)
+
+### Packages
+
+* Logger
+* Error
+
+### Commands
+
 * Restore:
   - Restore GOPATH using list of dependencies from `gaoler.json`
 * Update:

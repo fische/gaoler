@@ -8,35 +8,29 @@ type VCS interface {
 	GetName() string
 }
 
-func CloneAtRevision(v VCS, path, revision string, remote string) (Repository, error) {
-	r, err := v.New(path)
-	if err != nil {
+func CloneAtRevision(v VCS, remote, revision, path string) (Repository, error) {
+	var ret Repository
+	if err := os.MkdirAll(path, 0775); err != nil {
 		return nil, err
-	} else if err = r.AddRemote(remote); err != nil {
+	} else if ret, err = v.New(path); err != nil {
 		return nil, err
-	} else if err = r.Fetch(); err != nil {
+	} else if err = ret.AddRemote(remote); err != nil {
 		return nil, err
-	} else if err = r.Checkout(revision); err != nil {
+	} else if err = ret.Fetch(); err != nil {
+		return nil, err
+	} else if err = ret.Checkout(revision); err != nil {
 		return nil, err
 	}
-	return r, nil
+	return ret, nil
 }
 
-func CloneRepository(v VCS, path string, repo Repository) (Repository, error) {
-	err := os.MkdirAll(path, 0775)
-	if err != nil {
+func CloneRepository(v VCS, repo Repository, path string) (Repository, error) {
+	var ret Repository
+	if rev, err := repo.GetRevision(); err != nil {
 		return nil, err
-	}
-	rev, err := repo.GetRevision()
-	if err != nil {
+	} else if remote, err := repo.GetRemote(); err != nil {
 		return nil, err
-	}
-	remote, err := repo.GetRemote()
-	if err != nil {
-		return nil, err
-	}
-	ret, err := CloneAtRevision(v, path, rev, remote)
-	if err != nil {
+	} else if ret, err = CloneAtRevision(v, path, rev, remote); err != nil {
 		return nil, err
 	}
 	return ret, nil
