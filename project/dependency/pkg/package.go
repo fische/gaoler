@@ -58,6 +58,15 @@ func GetPackagePath(dir string) (string, error) {
 	return "", errors.New("Could not find package in src directories")
 }
 
+func IsInSrcDirs(dir string) bool {
+	for _, src := range srcDirs {
+		if strings.HasPrefix(dir, src) {
+			return true
+		}
+	}
+	return false
+}
+
 func (p Package) IsVendored() bool {
 	if len(vendorPath) == 0 {
 		return false

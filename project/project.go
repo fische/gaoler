@@ -20,10 +20,6 @@ type Project struct {
 	Dependencies dependency.Set
 }
 
-func GetProjectRootFromDir(dir string) string {
-	return dir
-}
-
 func New(root string) (*Project, error) {
 	name, err := pkg.GetPackagePath(root)
 	if err != nil {
@@ -58,7 +54,11 @@ func OpenCurrent(keepTests, ignoreVendor bool) (*Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewWithDependencies(GetProjectRootFromDir(wd), keepTests, ignoreVendor)
+	dir, err := GetProjectRootFromDir(wd)
+	if err != nil {
+		return nil, err
+	}
+	return NewWithDependencies(dir, keepTests, ignoreVendor)
 }
 
 func noTest(file os.FileInfo) bool {
