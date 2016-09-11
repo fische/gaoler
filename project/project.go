@@ -12,8 +12,8 @@ import (
 )
 
 type Project struct {
-	Root   string `json:"-"`
-	Vendor string `json:"-"`
+	Root   string `json:"-" yaml:"-"`
+	Vendor string `json:"-" yaml:"-"`
 
 	Name string
 
