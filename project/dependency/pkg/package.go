@@ -58,23 +58,6 @@ func GetPackagePath(dir string) (string, error) {
 	return "", errors.New("Could not find package in src directories")
 }
 
-func (p Package) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + p.Path + "\""), nil
-}
-
-func (p *Package) UnmarshalJSON(data []byte) error {
-	if data[0] == '"' && data[len(data)-1] == '"' {
-		p.Path = string(data[1 : len(data)-1])
-		i, err := build.Import(p.Path, srcPath, build.FindOnly|build.AllowBinary)
-		if err == nil {
-			p.Dir = i.Dir
-			p.Root = i.Goroot
-		}
-		return nil
-	}
-	return errors.New("Could not unmarshal package")
-}
-
 func (p Package) IsVendored() bool {
 	if len(vendorPath) == 0 {
 		return false

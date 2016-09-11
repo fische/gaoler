@@ -39,8 +39,8 @@ func KeepTestFiles(info os.FileInfo) CleanOption {
 
 func (d Dependency) Vendor(vendorRoot string, checkers ...CleanCheck) error {
 	path := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.RootPackage))
-	v, ok := modules.GetVCS(d.VCS)
-	if !ok {
+	v := modules.GetVCS(d.VCS)
+	if v == nil {
 		return fmt.Errorf("Unkown Version Control System : %s", d.VCS)
 	}
 	_, err := vcs.CloneAtRevision(v, d.Remote, d.Revision, path)

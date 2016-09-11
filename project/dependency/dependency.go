@@ -7,13 +7,13 @@ import (
 )
 
 type Dependency struct {
-	RootPackage string `json:"-"`
+	RootPackage string `json:"-" yaml:"-"`
 
 	repository vcs.Repository
 	VCS        string
 	Revision   string
 	Remote     string
-	Branch     string `json:",omitempty"`
+	Branch     string `json:",omitempty" yaml:",omitempty"`
 
 	Packages []*pkg.Package
 }
