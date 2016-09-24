@@ -20,9 +20,13 @@ var (
 )
 
 func Save(project *project.Project) error {
+	err := file.Truncate(0)
+	if err != nil {
+		return err
+	}
 	e := format.NewEncoder(file)
-	if i, ok := format.(formatter.IndentableEncoder); ok {
-		i.SetIndent("", "\t")
+	if i, ok := e.(formatter.PrettyEncoder); ok {
+		return i.PrettyEncode(project)
 	}
 	return e.Encode(project)
 }
@@ -31,12 +35,8 @@ func Load(p *project.Project) error {
 	return format.NewDecoder(file).Decode(p)
 }
 
-func Setup(configPath string, force bool) (err error) {
-	var flag int
-	if force {
-		flag |= os.O_TRUNC
-	}
-	file, err = os.OpenFile(configPath, os.O_RDWR|os.O_CREATE|flag, openPerm)
+func Setup(configPath string, flags Flags) (err error) {
+	file, err = os.OpenFile(configPath, flags.OpenFlags(), openPerm)
 	if err != nil {
 		return
 	}

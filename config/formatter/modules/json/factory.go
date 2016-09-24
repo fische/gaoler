@@ -14,7 +14,7 @@ const (
 )
 
 func (f Factory) NewEncoder(w io.Writer) formatter.Encoder {
-	return json.NewEncoder(w)
+	return &Encoder{json.NewEncoder(w)}
 }
 
 func (f Factory) NewDecoder(r io.Reader) formatter.Decoder {

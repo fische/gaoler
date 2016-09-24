@@ -1,50 +1,46 @@
 package dependency
 
 import (
-	"github.com/fische/gaoler/project/dependency/pkg"
+	"github.com/fische/gaoler/pkg"
 	"github.com/fische/gaoler/vcs"
 	"github.com/fische/gaoler/vcs/modules"
 )
 
 type Dependency struct {
-	RootPackage string `json:"-" yaml:"-"`
+	rootPackage string
 
 	repository vcs.Repository
-	VCS        string
-	Revision   string
-	Remote     string
+	VCS        string `json:",omitempty" yaml:",omitempty"`
+	Revision   string `json:",omitempty" yaml:",omitempty"`
+	Remote     string `json:",omitempty" yaml:",omitempty"`
 	Branch     string `json:",omitempty" yaml:",omitempty"`
 
 	Packages []*pkg.Package
 }
 
-func New(p *pkg.Package) (*Dependency, error) {
-	dep := &Dependency{
-		Packages: []*pkg.Package{p},
+func New(p *pkg.Package) *Dependency {
+	return &Dependency{
+		rootPackage: p.Path(),
+		Packages:    []*pkg.Package{p},
 	}
-	if !p.IsVendored() {
-		dep.SetRepository(p)
-	} else {
-		dep.RootPackage = p.Path
-	}
-	return dep, nil
 }
 
 func (d *Dependency) Add(p *pkg.Package) (added bool) {
-	if d.HasPackage(p.Path) {
+	if d.HasPackage(p.Path()) {
 		return
 	}
 	added = true
 	d.Packages = append(d.Packages, p)
-	if d.repository == nil && !p.IsVendored() {
-		d.SetRepository(p)
-	}
 	return
+}
+
+func (d *Dependency) SetRootPackage(rootPackage string) {
+	d.rootPackage = rootPackage
 }
 
 func (d Dependency) HasPackage(packagePath string) bool {
 	for _, pkg := range d.Packages {
-		if pkg.Path == packagePath {
+		if pkg.Path() == packagePath {
 			return true
 		}
 	}
@@ -60,22 +56,52 @@ func (d Dependency) IsVendored() bool {
 	return true
 }
 
-func (d *Dependency) SetRepository(p *pkg.Package) error {
+func (d *Dependency) OpenRepository(p *pkg.Package) error {
 	var (
 		err  error
 		path string
+
+		repo        vcs.Repository
+		rootPackage string
+		remote      string
+		revision    string
 	)
-	if d.repository, err = modules.OpenRepository(p.Dir); err != nil {
+	if repo, err = modules.OpenRepository(p.Dir()); err != nil {
 		return err
-	} else if path, err = d.repository.GetPath(); err != nil {
+	} else if path, err = repo.GetPath(); err != nil {
 		return err
-	} else if d.RootPackage, err = pkg.GetPackagePath(path); err != nil {
+	} else if rootPackage, err = pkg.GetPackagePath(path); err != nil {
 		return err
-	} else if d.Remote, err = d.repository.GetRemote(); err != nil {
+	} else if remote, err = repo.GetRemote(); err != nil {
 		return err
-	} else if d.Revision, err = d.repository.GetRevision(); err != nil {
+	} else if revision, err = repo.GetRevision(); err != nil {
 		return err
 	}
-	d.VCS = d.repository.GetVCSName()
+	d.VCS = repo.GetVCSName()
+	d.repository = repo
+	d.rootPackage = rootPackage
+	d.Remote = remote
+	d.Revision = revision
 	return nil
+}
+
+func (d *Dependency) Import(srcPath string, flags pkg.Flags) error {
+	for _, p := range d.Packages {
+		if err := p.Import(srcPath, flags); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d Dependency) RootPackage() string {
+	return d.rootPackage
+}
+
+func (d Dependency) IsOpened() bool {
+	return d.repository != nil
+}
+
+func (d Dependency) IsVendorable() bool {
+	return d.VCS != "" && d.Remote != "" && d.Revision != ""
 }

@@ -5,16 +5,14 @@ A Go package manager
 ## Usage
 
 ```
-Usage: goaler [-v] [--config=<config-file>] [ROOT] COMMAND [arg...]
+Usage: goaler [-v] [--config=<config-file>] [--main=<main-package>] COMMAND [arg...]
 
 A Go package manager
 
-Arguments:
-  ROOT="/home/fische_m/Project/Go/src/github.com/fische/gaoler"   Root directory from a project
-
 Options:
-  -c, --config="gaoler.json"   Path to the configuration file
-  -v, --verbose=false          Enable verbose mode
+  -m, --main="$PWD"                 Path to the main package
+  -c, --config="$PWD/gaoler.json"   Path to the configuration file
+  -v, --verbose=false                                                                 Enable verbose mode
 
 Commands:
   list         List dependencies of your project
@@ -25,8 +23,8 @@ Run 'goaler COMMAND --help' for more information on a command.
 
 ## Global Options and Arguments
 
-* `-c` defines the location of the config file
-* `ROOT` defines the location of the root directory of the project including the package main
+* `--config` defines the location of the config file
+* `--main` defines the location of the root directory of the project including the package main
 
 ## Commands
 

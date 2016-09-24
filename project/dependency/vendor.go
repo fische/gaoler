@@ -37,22 +37,19 @@ func KeepTestFiles(info os.FileInfo) CleanOption {
 	return Pass
 }
 
-func (d Dependency) Vendor(vendorRoot string, checkers ...CleanCheck) error {
-	path := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.RootPackage))
+func (d Dependency) Vendor(vendorRoot string) error {
+	path := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.rootPackage))
 	v := modules.GetVCS(d.VCS)
 	if v == nil {
 		return fmt.Errorf("Unkown Version Control System : %s", d.VCS)
 	}
 	_, err := vcs.CloneAtRevision(v, d.Remote, d.Revision, path)
-	if err != nil {
-		return err
-	}
-	return d.CleanVendor(vendorRoot, checkers...)
+	return err
 }
 
 func (d Dependency) CleanVendor(vendorRoot string, checkers ...CleanCheck) error {
-	root := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.RootPackage))
-	removeRootFiles := !d.HasPackage(d.RootPackage)
+	root := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.rootPackage))
+	removeRootFiles := !d.HasPackage(d.rootPackage)
 	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err == nil {
 			for _, checker := range checkers {
@@ -66,7 +63,7 @@ func (d Dependency) CleanVendor(vendorRoot string, checkers ...CleanCheck) error
 			}
 			if info.IsDir() {
 				var rel string
-				if rel, err = filepath.Rel(vendorRoot, path); err == nil && rel != d.RootPackage && !d.HasPackage(rel) {
+				if rel, err = filepath.Rel(vendorRoot, path); err == nil && rel != d.rootPackage && !d.HasPackage(rel) {
 					if err = os.RemoveAll(path); err != nil {
 						return err
 					}
