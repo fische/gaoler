@@ -8,14 +8,13 @@ var (
 	}
 )
 
-func GetNameFromImport(imp *ast.ImportSpec) string {
+func GetPackagePathFromImport(imp *ast.ImportSpec) string {
 	return imp.Path.Value[1 : len(imp.Path.Value)-1]
 }
 
-func IsPseudoPackage(imp *ast.ImportSpec) bool {
-	n := GetNameFromImport(imp)
+func IsPseudoPackage(pkgPath string) bool {
 	for _, p := range pseudoPackages {
-		if n == p {
+		if pkgPath == p {
 			return true
 		}
 	}

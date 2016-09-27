@@ -1,74 +1,78 @@
 package dependency
 
 import (
-	"encoding/json"
 	"strings"
 
-	"github.com/fische/gaoler/project/dependency/pkg"
+	"github.com/fische/gaoler/pkg"
 )
 
-type Set map[string]*Dependency
-
-func NewSet() Set {
-	return make(map[string]*Dependency)
+type Set struct {
+	deps           map[string]*Dependency
+	Filter         func(p *pkg.Package) bool
+	OnPackageAdded func(p *pkg.Package, dep *Dependency) error
+	OnDecoded      func(dep *Dependency) error
 }
 
-func (s Set) GetDependencyOf(p *pkg.Package) *Dependency {
-	for root, dep := range s {
-		if strings.HasPrefix(p.Path, root) {
-			return dep
-		}
+func NewSet() *Set {
+	return &Set{
+		deps: make(map[string]*Dependency),
 	}
-	return nil
 }
 
-func (s Set) ContainsDependencyOf(p *pkg.Package) bool {
-	for root := range s {
-		if strings.HasPrefix(p.Path, root) {
-			return true
-		}
-	}
-	return false
-}
-
-func (s Set) Add(p *pkg.Package, ignoreVendor bool) (added bool, err error) {
-	if dep := s.GetDependencyOf(p); dep != nil {
-		added = dep.Add(p)
-	} else {
+func (deps *Set) fromSet(s *pkg.Set) error {
+	for len(s.Packages) > 0 {
 		var dep *Dependency
-		dep, err = New(p)
-		if err != nil {
-			return
+		for pkgPath, p := range s.Packages {
+			if deps.Filter != nil && deps.Filter(p) {
+				added := true
+				if dep == nil {
+					dep = New(p)
+				} else if strings.HasPrefix(p.Path(), dep.RootPackage()) {
+					added = dep.Add(p)
+				} else {
+					continue
+				}
+				if added && deps.OnPackageAdded != nil {
+					if err := deps.OnPackageAdded(p, dep); err != nil {
+						return err
+					}
+				}
+			}
+			s.Remove(pkgPath)
 		}
-		s[dep.RootPackage] = dep
-		added = true
-	}
-	return
-}
-
-func (s Set) GetDependencies() []*Dependency {
-	deps := make([]*Dependency, len(s))
-	idx := 0
-	for _, dep := range s {
-		deps[idx] = dep
-		idx++
-	}
-	return deps
-}
-
-func (s Set) UnmarshalJSON(data []byte) error {
-	m := make(map[string]json.RawMessage)
-	if err := json.Unmarshal(data, &m); err != nil {
-		return err
-	}
-	for root, value := range m {
-		dep := &Dependency{
-			RootPackage: root,
+		if dep != nil {
+			deps.deps[dep.RootPackage()] = dep
 		}
-		if err := json.Unmarshal(value, dep); err != nil {
-			return err
-		}
-		s[root] = dep
 	}
 	return nil
+}
+
+func (deps *Set) MergePackageSet(s *pkg.Set) error {
+	for rootPackage, dep := range deps.deps {
+		for pkgPath, p := range s.Packages {
+			if strings.HasPrefix(pkgPath, rootPackage) {
+				if dep.Add(p) && deps.OnPackageAdded != nil {
+					if err := deps.OnPackageAdded(p, dep); err != nil {
+						return err
+					}
+				}
+				s.Remove(pkgPath)
+			}
+		}
+	}
+	return deps.fromSet(s)
+}
+
+func (deps *Set) ToPackageSet() *pkg.Set {
+	s := pkg.NewSet()
+	for _, dep := range deps.deps {
+		for _, p := range dep.Packages {
+			s.Insert(p, true)
+		}
+	}
+	return s
+}
+
+func (deps Set) Deps() map[string]*Dependency {
+	return deps.deps
 }

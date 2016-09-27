@@ -23,9 +23,8 @@ func OpenRepository(path string) (repo vcs.Repository, err error) {
 	return nil, errors.New("Could not open repository")
 }
 
-func GetVCS(vcsName string) (vcs.VCS, bool) {
-	f, ok := impl[vcsName]
-	return f, ok
+func GetVCS(vcsName string) vcs.VCS {
+	return impl[vcsName]
 }
 
 func init() {

@@ -1,3 +1,4 @@
 gaoler
 vendor
-gaoler.json
+*.json
+*.yaml
