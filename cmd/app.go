@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/fische/gaoler/pkg"
 	"github.com/fische/gaoler/project"
 	"github.com/jawher/mow.cli"
 )
@@ -16,23 +15,20 @@ var (
 	ExitSuccess = 0
 	ExitFailure = 1
 
-	main       *string
+	mainPath   *string
 	configPath *string
-
-	pkgFlags pkg.Flags
 )
 
 func init() {
 	Gaoler.Spec = "[-v] [--config=<config-file>] [--main=<main-package>]"
 
-	pkgFlags = pkg.NoPseudoPackage | pkg.NoStandardPackage | pkg.NoLocalPackage | pkg.NoTests
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Errorf("Could not get working directory : %v", err)
 		cli.Exit(ExitFailure)
 	}
 	dir, _ := project.GetProjectRootFromDir(wd)
-	main = Gaoler.StringOpt("m main", dir, "Path to the main package")
+	mainPath = Gaoler.StringOpt("m main", dir, "Path to the main package")
 	configPath = Gaoler.StringOpt("c config", filepath.Clean(dir+"/gaoler.json"), "Path to the configuration file")
 	verbose := Gaoler.BoolOpt("v verbose", false, "Enable verbose mode")
 

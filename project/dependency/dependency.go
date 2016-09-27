@@ -3,7 +3,6 @@ package dependency
 import (
 	"github.com/fische/gaoler/pkg"
 	"github.com/fische/gaoler/vcs"
-	"github.com/fische/gaoler/vcs/modules"
 )
 
 type Dependency struct {
@@ -34,17 +33,12 @@ func (d *Dependency) Add(p *pkg.Package) (added bool) {
 	return
 }
 
-func (d *Dependency) SetRootPackage(rootPackage string) {
-	d.rootPackage = rootPackage
+func (d Dependency) RootPackage() string {
+	return d.rootPackage
 }
 
-func (d Dependency) HasPackage(packagePath string) bool {
-	for _, pkg := range d.Packages {
-		if pkg.Path() == packagePath {
-			return true
-		}
-	}
-	return false
+func (d Dependency) IsVendorable() bool {
+	return d.VCS != "" && d.Remote != "" && d.Revision != ""
 }
 
 func (d Dependency) IsVendored() bool {
@@ -56,52 +50,11 @@ func (d Dependency) IsVendored() bool {
 	return true
 }
 
-func (d *Dependency) OpenRepository(p *pkg.Package) error {
-	var (
-		err  error
-		path string
-
-		repo        vcs.Repository
-		rootPackage string
-		remote      string
-		revision    string
-	)
-	if repo, err = modules.OpenRepository(p.Dir()); err != nil {
-		return err
-	} else if path, err = repo.GetPath(); err != nil {
-		return err
-	} else if rootPackage, err = pkg.GetPackagePath(path); err != nil {
-		return err
-	} else if remote, err = repo.GetRemote(); err != nil {
-		return err
-	} else if revision, err = repo.GetRevision(); err != nil {
-		return err
-	}
-	d.VCS = repo.GetVCSName()
-	d.repository = repo
-	d.rootPackage = rootPackage
-	d.Remote = remote
-	d.Revision = revision
-	return nil
-}
-
-func (d *Dependency) Import(srcPath string, flags pkg.Flags) error {
-	for _, p := range d.Packages {
-		if err := p.Import(srcPath, flags); err != nil {
-			return err
+func (d Dependency) HasPackage(packagePath string) bool {
+	for _, pkg := range d.Packages {
+		if pkg.Path() == packagePath {
+			return true
 		}
 	}
-	return nil
-}
-
-func (d Dependency) RootPackage() string {
-	return d.rootPackage
-}
-
-func (d Dependency) IsOpened() bool {
-	return d.repository != nil
-}
-
-func (d Dependency) IsVendorable() bool {
-	return d.VCS != "" && d.Remote != "" && d.Revision != ""
+	return false
 }

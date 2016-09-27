@@ -10,46 +10,57 @@ import (
 	"github.com/fische/gaoler/project"
 )
 
+type Config struct {
+	path    string
+	format  formatter.Factory
+	project *project.Project
+}
+
 const (
 	openPerm = 0664
 )
 
-var (
-	file   *os.File
-	format formatter.Factory
-)
-
-func Save(project *project.Project) error {
-	err := file.Truncate(0)
-	if err != nil {
-		return err
+func New(p *project.Project, configPath string) (*Config, error) {
+	var cfg = &Config{
+		project: p,
+		path:    configPath,
 	}
-	e := format.NewEncoder(file)
-	if i, ok := e.(formatter.PrettyEncoder); ok {
-		return i.PrettyEncode(project)
-	}
-	return e.Encode(project)
-}
-
-func Load(p *project.Project) error {
-	return format.NewDecoder(file).Decode(p)
-}
-
-func Setup(configPath string, flags Flags) (err error) {
-	file, err = os.OpenFile(configPath, flags.OpenFlags(), openPerm)
-	if err != nil {
-		return
-	}
-	ext := filepath.Ext(file.Name())
+	ext := filepath.Ext(configPath)
 	if len(ext) > 0 && ext[0] == '.' {
 		ext = ext[1:]
 	}
-	if format = modules.GetFormatter(ext); format == nil {
-		err = errors.New("Could not find formatter")
+	if cfg.format = modules.GetFormatter(ext); cfg.format == nil {
+		return nil, errors.New("Could not find formatter")
 	}
-	return
+	return cfg, nil
 }
 
-func Close() error {
+func (cfg Config) Save() error {
+	var (
+		file *os.File
+		err  error
+	)
+	if file, err = os.OpenFile(cfg.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, openPerm); err != nil {
+		return err
+	}
+	e := cfg.format.NewEncoder(file)
+	if i, ok := e.(formatter.PrettyEncoder); ok {
+		return i.PrettyEncode(cfg.project)
+	} else if err = e.Encode(cfg.project); err != nil {
+		return err
+	}
+	return file.Close()
+}
+
+func (cfg *Config) Load() error {
+	var (
+		file *os.File
+		err  error
+	)
+	if file, err = os.OpenFile(cfg.path, os.O_RDONLY, openPerm); err != nil {
+		return err
+	} else if err = cfg.format.NewDecoder(file).Decode(cfg.project); err != nil {
+		return err
+	}
 	return file.Close()
 }

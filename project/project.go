@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/fische/gaoler/pkg"
-	"github.com/fische/gaoler/pkg/set"
+	"github.com/fische/gaoler/project/dependency"
 )
 
 type Project struct {
@@ -13,7 +13,7 @@ type Project struct {
 
 	Name string
 
-	Dependencies Dependencies
+	Dependencies *dependency.Set
 }
 
 func New(root string) (*Project, error) {
@@ -25,17 +25,8 @@ func New(root string) (*Project, error) {
 		root:         root,
 		vendor:       filepath.Clean(root + "/vendor/"),
 		Name:         name,
-		Dependencies: make(Dependencies),
+		Dependencies: dependency.NewSet(),
 	}, nil
-}
-
-func NewWithDependencies(root string, s *set.Packages, openRepository bool) (*Project, error) {
-	p, err := New(root)
-	if err != nil {
-		return nil, err
-	}
-	p.Dependencies.Set(s, openRepository)
-	return p, nil
 }
 
 func (p Project) Root() string {

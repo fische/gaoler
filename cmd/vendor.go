@@ -1,98 +1,107 @@
 package cmd
 
 import (
-	"io"
-	"path/filepath"
+	"os"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/fische/gaoler/cmd/flags"
 	"github.com/fische/gaoler/config"
 	"github.com/fische/gaoler/pkg"
-	"github.com/fische/gaoler/pkg/set"
 	"github.com/fische/gaoler/project"
 	"github.com/fische/gaoler/project/dependency"
-	"github.com/jawher/mow.cli"
+	cli "github.com/jawher/mow.cli"
+	"github.com/lunny/log"
 )
-
-func forceReset(f *config.Flags) {
-	if err := resetDir(filepath.Clean(*main + "/vendor/")); err != nil {
-		log.Errorf("Could not clean vendor directory : %v", err)
-		cli.Exit(ExitFailure)
-	}
-}
 
 func init() {
 	Gaoler.Command("vendor", "Vendor dependencies of your project", func(cmd *cli.Cmd) {
+		var (
+			test  = cmd.BoolOpt("t test", false, "Include tests")
+			save  = cmd.BoolOpt("s save", false, "Save vendored dependencies to CONFIG file")
+			force = cmd.BoolOpt("f force", false, "Force the regeneration of the vendor directory")
+
+			cfg *config.Config
+			p   *project.Project
+		)
+
 		cmd.Spec = "[-t] [-s] [-f]"
 
-		configFlags := config.LoadFlag
-		cmd.VarOpt("t test", flags.New(setNoTestPkg, false, true), "Include tests")
-		cmd.VarOpt("s save", flags.New(setConfigFlag(&configFlags, config.SaveFlag), false, true), "Save vendored dependencies to CONFIG file")
-		force := cmd.BoolOpt("f force", false, "Force the regeneration of the vendor directory")
-
 		cmd.Before = func() {
-			if *force {
-				forceReset(&configFlags)
-			}
-			if err := config.Setup(*configPath, configFlags); err != nil {
-				log.Errorf("Could not setup config : %v", err)
+			var err error
+			if p, err = project.New(*mainPath); err != nil {
+				log.Errorf("Could not get project : %v", err)
 				cli.Exit(ExitFailure)
+			} else if cfg, err = config.New(p, *configPath); err != nil {
+				log.Errorf("Could not get config : %v", err)
+				cli.Exit(ExitFailure)
+			}
+
+			if *force {
+				if err := resetDir(p.Vendor()); err != nil {
+					log.Errorf("Could not reset vendor directory : %v", err)
+					cli.Exit(ExitFailure)
+				}
 			}
 		}
 
 		cmd.Action = func() {
-			p, err := project.New(*main)
-			if err != nil {
-				log.Errorf("Could not create a new project : %v", err)
-				cli.Exit(ExitFailure)
-			} else if err = config.Load(p); err != nil && err != io.EOF {
-				log.Errorf("Could not load config : %v", err)
-				cli.Exit(ExitFailure)
-			} else if err == io.EOF {
-				var s *set.Packages
-				s, err = set.ListPackagesFrom(*main, pkgFlags)
-				if err != nil {
-					log.Errorf("Could not list package : %v", err)
-					cli.Exit(ExitFailure)
+			changed := false
+			p.Dependencies.Filter = filterUsefulDependencies
+			p.Dependencies.OnPackageAdded = func(p *pkg.Package, dep *dependency.Dependency) error {
+				if !p.IsVendored() && !dep.HasOpenedRepository() {
+					dep.OpenRepository(p.Dir()) // TODO: Print warning on error
 				}
-				p.Dependencies.Set(s, true)
-			} else {
-				if err = p.Dependencies.Import(*main, pkgFlags); err != nil {
-					log.Errorf("Could not import saved dependencies : %v", err)
-					cli.Exit(ExitFailure)
-				}
-				s := p.Dependencies.GetPackagesSet()
-				if err = s.CompleteFrom(*main, pkgFlags); err != nil {
-					log.Errorf("Could not complete packages list : %v", err)
-					cli.Exit(ExitFailure)
-				}
-				p.Dependencies.Merge(s, true)
+				changed = true
+				return nil
 			}
-			var opts []dependency.CleanCheck
-			if pkgFlags.Has(pkg.NoTests) {
+			p.Dependencies.OnDecoded = importDependency(*mainPath, false, true)
+
+			var s *pkg.Set
+			if *force {
+				s = pkg.NewSet()
+			} else {
+				if err := cfg.Load(); err != nil && !os.IsNotExist(err) {
+					log.Errorf("Could not load config : %v", err)
+					cli.Exit(ExitFailure)
+				} else if os.IsNotExist(err) {
+					s = pkg.NewSet()
+				} else {
+					s = p.Dependencies.ToPackageSet()
+				}
+			}
+
+			s.OnAdded = importPackage(*mainPath, false)
+			if !*test {
+				s.Filter = pkg.NoTestFiles
+			}
+
+			if err := s.ListFrom(*mainPath); err != nil {
+				log.Errorf("Could not list packages : %v", err)
+				cli.Exit(ExitFailure)
+			} else if err = p.Dependencies.MergePackageSet(s); err != nil {
+				log.Errorf("Could not merge dependencies : %v", err)
+				cli.Exit(ExitFailure)
+			}
+
+			var opts []func(info os.FileInfo) dependency.CleanOption
+			if !*test {
 				opts = append(opts, dependency.RemoveTestFiles)
 			} else {
 				opts = append(opts, dependency.KeepTestFiles)
 			}
-			for _, dep := range p.Dependencies {
-				if *force || !dep.IsVendored() {
+			for _, dep := range p.Dependencies.Deps() {
+				if dep.IsVendorable() && (*force || !dep.IsVendored()) {
 					log.Printf("Cloning of %s...", dep.RootPackage())
-					err = dep.Vendor(p.Vendor())
-					if err != nil {
+					if err := dep.Vendor(p.Vendor(), *force); err != nil {
 						log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage(), err)
 						cli.Exit(ExitFailure)
-					}
-					err = dep.CleanVendor(p.Vendor(), opts...)
-					if err != nil {
+					} else if err = dep.CleanVendor(p.Vendor(), opts...); err != nil {
 						log.Errorf("Could not clean repository of package %s : %v", dep.RootPackage(), err)
 						cli.Exit(ExitFailure)
 					}
 					log.Printf("Successful clone of %s", dep.RootPackage())
 				}
 			}
-			if configFlags.Has(config.SaveFlag) {
-				err = config.Save(p)
-				if err != nil {
+			if changed && *save {
+				if err := cfg.Save(); err != nil {
 					log.Errorf("Could not save config : %v", err)
 					cli.Exit(ExitFailure)
 				}
