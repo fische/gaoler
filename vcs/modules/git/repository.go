@@ -141,6 +141,10 @@ func (r Repository) Checkout(revision string) error {
 	return nil
 }
 
+func (r Repository) CheckoutBranch(branch string) error {
+	return r.Checkout(branch)
+}
+
 func (r Repository) GetPath() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -150,6 +154,22 @@ func (r Repository) GetPath() (string, error) {
 	}
 	var path []byte
 	if path, err = exec.Command(cmd, "rev-parse", "--show-toplevel").CombinedOutput(); err != nil {
+		return "", errors.New(string(path))
+	} else if err = os.Chdir(dir); err != nil {
+		return "", err
+	}
+	return string(path[:len(path)-1]), nil
+}
+
+func (r Repository) GetBranch() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	} else if err = os.Chdir(r.Path); err != nil {
+		return "", err
+	}
+	var path []byte
+	if path, err = exec.Command(cmd, "rev-parse", "--abbrev-ref", "HEAD").CombinedOutput(); err != nil {
 		return "", errors.New(string(path))
 	} else if err = os.Chdir(dir); err != nil {
 		return "", err
