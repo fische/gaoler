@@ -15,10 +15,11 @@ import (
 func init() {
 	Gaoler.Command("list", "List dependencies of your project", func(cmd *cli.Cmd) {
 		var (
-			test = cmd.BoolOpt("t test", false, "Include tests dependencies")
+			cfg      *config.Config
+			p        *project.Project
+			noConfig bool
 
-			cfg *config.Config
-			p   *project.Project
+			test = cmd.BoolOpt("t test", false, "Include tests dependencies")
 		)
 
 		cmd.Spec = "[-t]"
@@ -28,9 +29,11 @@ func init() {
 			if p, err = project.New(*mainPath); err != nil {
 				log.Errorf("Could not get project : %v", err)
 				cli.Exit(ExitFailure)
-			} else if cfg, err = config.New(p, *configPath); err != nil {
+			} else if cfg, err = config.New(p, *configPath, config.Load); err != nil && !os.IsNotExist(err) {
 				log.Errorf("Could not get config : %v", err)
 				cli.Exit(ExitFailure)
+			} else if os.IsNotExist(err) {
+				noConfig = true
 			}
 		}
 
@@ -39,13 +42,15 @@ func init() {
 			p.Dependencies.OnDecoded = importDependency(*mainPath, false, true)
 
 			var s *pkg.Set
-			if err := cfg.Load(); err != nil && !os.IsNotExist(err) {
-				log.Errorf("Could not load config : %v", err)
-				cli.Exit(ExitFailure)
-			} else if os.IsNotExist(err) {
+			if noConfig {
 				s = pkg.NewSet()
 			} else {
-				s = p.Dependencies.ToPackageSet()
+				if err := cfg.Load(); err != nil {
+					log.Errorf("Could not load config : %v", err)
+					cli.Exit(ExitFailure)
+				} else {
+					s = p.Dependencies.ToPackageSet()
+				}
 			}
 
 			s.OnAdded = importPackage(*mainPath, false)

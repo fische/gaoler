@@ -1,61 +1,81 @@
 package cmd
 
-// import (
-// 	log "github.com/Sirupsen/logrus"
-// 	"github.com/fische/gaoler/config"
-// 	"github.com/fische/gaoler/project"
-// 	cli "github.com/jawher/mow.cli"
-// )
-//
-// func init() {
-// 	Gaoler.Command("update", "Update dependencies of your project", func(cmd *cli.Cmd) {
-// 		cmd.Spec = "[-s] [-t]"
-//
-// 		save := cmd.BoolOpt("s save", false, "Save vendored dependencies to CONFIG file")
-// 		// test := cmd.BoolOpt("t test", false, "Include tests")
-//
-// 		cmd.Before = func() {
-// 			if err := config.Setup(*configPath, false); err != nil {
-// 				if err != nil {
-// 					log.Errorf("Could not setup config : %v", err)
-// 					cli.Exit(ExitFailure)
-// 				}
-// 			}
-// 		}
-//
-// 		cmd.Action = func() {
-// 			p, err := project.New(*root)
-// 			if err != nil {
-// 				log.Errorf("Could not create a new project : %v", err)
-// 				cli.Exit(ExitFailure)
-// 			} else if err = config.Load(p); err != nil {
-// 				log.Errorf("Could not load config : %v", err)
-// 				cli.Exit(ExitFailure)
-// 			}
-// 			// var opts []dependency.CleanCheck
-// 			// if *keepTests {
-// 			// 	opts = append(opts, dependency.KeepTestFiles)
-// 			// } else {
-// 			// 	opts = append(opts, dependency.RemoveTestFiles)
-// 			// }
-// 			// for _, dep := range p.Dependencies {
-// 			// 	if !p.IsDependency(dep) && (*force || !dep.IsVendored()) {
-// 			// 		log.Printf("Cloning of %s...", dep.RootPackage)
-// 			// 		err = dep.Vendor(p.Vendor, opts...)
-// 			// 		if err != nil {
-// 			// 			log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage, err)
-// 			// 			cli.Exit(ExitFailure)
-// 			// 		}
-// 			// 		log.Printf("Successful clone of %s", dep.RootPackage)
-// 			// 	}
-// 			// }
-// 			if *save {
-// 				err = config.Save(p)
-// 				if err != nil {
-// 					log.Errorf("Could not save config : %v", err)
-// 					cli.Exit(ExitFailure)
-// 				}
-// 			}
-// 		}
-// 	})
-// }
+import (
+	"os"
+
+	"github.com/fische/gaoler/config"
+	"github.com/fische/gaoler/project"
+	"github.com/fische/gaoler/project/dependency"
+	cli "github.com/jawher/mow.cli"
+	"github.com/lunny/log"
+)
+
+func init() {
+	Gaoler.Command("update", "Update dependencies of your project", func(cmd *cli.Cmd) {
+		var (
+			cfg *config.Config
+			p   *project.Project
+
+			save = cmd.BoolOpt("s save", false, "Save updated dependencies to CONFIG file")
+			test = cmd.BoolOpt("t test", false, "Include tests")
+		)
+
+		cmd.Spec = "[-s] [-t]"
+
+		cmd.Before = func() {
+			flags := config.Load
+			if *save {
+				flags |= config.Save
+			}
+
+			var err error
+			if p, err = project.New(*mainPath); err != nil {
+				log.Errorf("Could not get project : %v", err)
+				cli.Exit(ExitFailure)
+			} else if cfg, err = config.New(p, *configPath, flags); err != nil {
+				log.Errorf("Could not get config : %v", err)
+				cli.Exit(ExitFailure)
+			}
+		}
+
+		cmd.Action = func() {
+			p.Dependencies.OnDecoded = importDependency(*mainPath, false, true)
+
+			if err := cfg.Load(); err != nil {
+				log.Errorf("Could not load config : %v", err)
+				cli.Exit(ExitFailure)
+			}
+
+			var (
+				opts    []func(info os.FileInfo) dependency.CleanOption
+				updated bool
+			)
+			if !*test {
+				opts = append(opts, dependency.RemoveTestFiles)
+			} else {
+				opts = append(opts, dependency.KeepTestFiles)
+			}
+			for _, dep := range p.Dependencies.Deps() {
+				if dep.IsUpdatable() {
+					log.Printf("Updating %s...", dep.RootPackage())
+					if u, err := dep.Update(p.Vendor()); err != nil {
+						log.Errorf("Could not load config : %v", err)
+						cli.Exit(ExitFailure)
+					} else if err = dep.CleanVendor(p.Vendor(), opts...); err != nil {
+						log.Errorf("Could not clean repository of package %s : %v", dep.RootPackage(), err)
+						cli.Exit(ExitFailure)
+					} else {
+						updated = updated || u
+					}
+					log.Printf("Successful update of %s", dep.RootPackage())
+				}
+			}
+			if updated && *save {
+				if err := cfg.Save(); err != nil {
+					log.Errorf("Could not save config : %v", err)
+					cli.Exit(ExitFailure)
+				}
+			}
+		}
+	})
+}

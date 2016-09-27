@@ -40,7 +40,9 @@ func (deps *Set) fromSet(s *pkg.Set) error {
 			}
 			s.Remove(pkgPath)
 		}
-		deps.deps[dep.RootPackage()] = dep
+		if dep != nil {
+			deps.deps[dep.RootPackage()] = dep
+		}
 	}
 	return nil
 }

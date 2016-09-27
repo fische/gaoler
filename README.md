@@ -69,13 +69,13 @@ Run 'goaler COMMAND --help' for more information on a command.
 ### Config
 
 * Let the user choose between json and yaml to save the config
+* Split test dependencies from the normal ones
 
 ### Commands
 
 * Find `main` package automatically
 * Update:
-  - if not pinned, update according to changes in current GOPATH (check if commit is after)
-  - if pinned, check if branch exist, store current state(branch/commit/whatever) for rolling back, checkout to branch, pull, rollback
+  - update using branch
 
 ## Suggestion box
 
@@ -92,7 +92,9 @@ Run 'goaler COMMAND --help' for more information on a command.
 * Clean:
   - clean vendor directory from any unused dependency
 * Restore:
-  - Restore GOPATH using list of dependencies from `gaoler.json`
+  - Restore vendor to statement as indicated in `gaoler.json`
+* Update:
+  - update using tags and similar syntax as node.js
 
 ### VCS
 
@@ -107,5 +109,4 @@ Run 'goaler COMMAND --help' for more information on a command.
 
 ### Options
 
-* Dev dependencies
 * Scripts

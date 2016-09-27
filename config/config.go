@@ -11,7 +11,7 @@ import (
 )
 
 type Config struct {
-	path    string
+	file    *os.File
 	format  formatter.Factory
 	project *project.Project
 }
@@ -20,12 +20,17 @@ const (
 	openPerm = 0664
 )
 
-func New(p *project.Project, configPath string) (*Config, error) {
-	var cfg = &Config{
-		project: p,
-		path:    configPath,
+func New(p *project.Project, configPath string, flags Flags) (*Config, error) {
+	var (
+		cfg = &Config{
+			project: p,
+		}
+		err error
+	)
+	if cfg.file, err = os.OpenFile(configPath, flags.OpenFlags(), openPerm); err != nil {
+		return nil, err
 	}
-	ext := filepath.Ext(configPath)
+	ext := filepath.Ext(cfg.file.Name())
 	if len(ext) > 0 && ext[0] == '.' {
 		ext = ext[1:]
 	}
@@ -36,31 +41,20 @@ func New(p *project.Project, configPath string) (*Config, error) {
 }
 
 func (cfg Config) Save() error {
-	var (
-		file *os.File
-		err  error
-	)
-	if file, err = os.OpenFile(cfg.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, openPerm); err != nil {
+	if offset, err := cfg.file.Seek(0, 0); err != nil {
+		return err
+	} else if offset != 0 {
+		return errors.New("Could not seek beginning of the config")
+	} else if err = cfg.file.Truncate(0); err != nil {
 		return err
 	}
-	e := cfg.format.NewEncoder(file)
+	e := cfg.format.NewEncoder(cfg.file)
 	if i, ok := e.(formatter.PrettyEncoder); ok {
 		return i.PrettyEncode(cfg.project)
-	} else if err = e.Encode(cfg.project); err != nil {
-		return err
 	}
-	return file.Close()
+	return e.Encode(cfg.project)
 }
 
 func (cfg *Config) Load() error {
-	var (
-		file *os.File
-		err  error
-	)
-	if file, err = os.OpenFile(cfg.path, os.O_RDONLY, openPerm); err != nil {
-		return err
-	} else if err = cfg.format.NewDecoder(file).Decode(cfg.project); err != nil {
-		return err
-	}
-	return file.Close()
+	return cfg.format.NewDecoder(cfg.file).Decode(cfg.project)
 }

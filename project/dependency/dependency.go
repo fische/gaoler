@@ -37,10 +37,6 @@ func (d Dependency) RootPackage() string {
 	return d.rootPackage
 }
 
-func (d Dependency) IsVendorable() bool {
-	return d.VCS != "" && d.Remote != "" && d.Revision != ""
-}
-
 func (d Dependency) IsVendored() bool {
 	for _, p := range d.Packages {
 		if !p.IsVendored() {
@@ -57,4 +53,12 @@ func (d Dependency) HasPackage(packagePath string) bool {
 		}
 	}
 	return false
+}
+
+func (d Dependency) IsVendorable() bool {
+	return d.VCS != "" && d.Remote != "" && d.Revision != ""
+}
+
+func (d Dependency) IsUpdatable() bool {
+	return d.IsVendorable() && d.Branch != ""
 }
