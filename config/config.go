@@ -10,46 +10,51 @@ import (
 	"github.com/fische/gaoler/project"
 )
 
+type Config struct {
+	file    *os.File
+	format  formatter.Factory
+	project *project.Project
+}
+
 const (
 	openPerm = 0664
 )
 
-var (
-	file   *os.File
-	format formatter.Factory
-)
-
-func Save(project *project.Project) error {
-	e := format.NewEncoder(file)
-	if i, ok := format.(formatter.IndentableEncoder); ok {
-		i.SetIndent("", "\t")
+func New(p *project.Project, configPath string, flags Flags) (*Config, error) {
+	var (
+		cfg = &Config{
+			project: p,
+		}
+		err error
+	)
+	if cfg.file, err = os.OpenFile(configPath, flags.OpenFlags(), openPerm); err != nil {
+		return nil, err
 	}
-	return e.Encode(project)
-}
-
-func Load(p *project.Project) error {
-	return format.NewDecoder(file).Decode(p)
-}
-
-func Setup(configPath string, force bool) (err error) {
-	var flag int
-	if force {
-		flag |= os.O_TRUNC
-	}
-	file, err = os.OpenFile(configPath, os.O_RDWR|os.O_CREATE|flag, openPerm)
-	if err != nil {
-		return
-	}
-	ext := filepath.Ext(file.Name())
+	ext := filepath.Ext(cfg.file.Name())
 	if len(ext) > 0 && ext[0] == '.' {
 		ext = ext[1:]
 	}
-	if format = modules.GetFormatter(ext); format == nil {
-		err = errors.New("Could not find formatter")
+	if cfg.format = modules.GetFormatter(ext); cfg.format == nil {
+		return nil, errors.New("Could not find formatter")
 	}
-	return
+	return cfg, nil
 }
 
-func Close() error {
-	return file.Close()
+func (cfg Config) Save() error {
+	if offset, err := cfg.file.Seek(0, 0); err != nil {
+		return err
+	} else if offset != 0 {
+		return errors.New("Could not seek beginning of the config")
+	} else if err = cfg.file.Truncate(0); err != nil {
+		return err
+	}
+	e := cfg.format.NewEncoder(cfg.file)
+	if i, ok := e.(formatter.PrettyEncoder); ok {
+		return i.PrettyEncode(cfg.project)
+	}
+	return e.Encode(cfg.project)
+}
+
+func (cfg *Config) Load() error {
+	return cfg.format.NewDecoder(cfg.file).Decode(cfg.project)
 }

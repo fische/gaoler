@@ -1,7 +1,5 @@
 package vcs
 
-import "os"
-
 type VCS interface {
 	New(path string) (Repository, error)
 	Open(path string) (Repository, error)
@@ -9,10 +7,11 @@ type VCS interface {
 }
 
 func CloneAtRevision(v VCS, remote, revision, path string) (Repository, error) {
-	var ret Repository
-	if err := os.MkdirAll(path, 0775); err != nil {
-		return nil, err
-	} else if ret, err = v.New(path); err != nil {
+	var (
+		ret Repository
+		err error
+	)
+	if ret, err = v.New(path); err != nil {
 		return nil, err
 	} else if err = ret.AddRemote(remote); err != nil {
 		return nil, err

@@ -6,7 +6,7 @@ import (
 	"go/token"
 	"path/filepath"
 
-	"github.com/fische/gaoler/project/dependency/pkg"
+	"github.com/fische/gaoler/pkg"
 )
 
 func isProjectRoot(dir string) bool {

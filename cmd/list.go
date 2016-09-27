@@ -1,48 +1,82 @@
 package cmd
 
 import (
-	"io"
+	"fmt"
+	"os"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/fische/gaoler/config"
+	"github.com/fische/gaoler/pkg"
 	"github.com/fische/gaoler/project"
 	"github.com/jawher/mow.cli"
+	"github.com/lunny/log"
+	"github.com/ttacon/chalk"
 )
 
 func init() {
 	Gaoler.Command("list", "List dependencies of your project", func(cmd *cli.Cmd) {
+		var (
+			cfg      *config.Config
+			p        *project.Project
+			noConfig bool
+
+			test = cmd.BoolOpt("t test", false, "Include tests dependencies")
+		)
+
 		cmd.Spec = "[-t]"
 
-		keepTests := cmd.BoolOpt("t test", false, "Keep test files")
-
 		cmd.Before = func() {
-			err := config.Setup(*configPath, false)
-			if err != nil {
-				log.Errorf("Could not setup config : %v", err)
+			var err error
+			if p, err = project.New(*mainPath); err != nil {
+				log.Errorf("Could not get project : %v", err)
 				cli.Exit(ExitFailure)
+			} else if cfg, err = config.New(p, *configPath, config.Load); err != nil && !os.IsNotExist(err) {
+				log.Errorf("Could not get config : %v", err)
+				cli.Exit(ExitFailure)
+			} else if os.IsNotExist(err) {
+				noConfig = true
 			}
 		}
 
 		cmd.Action = func() {
-			p, err := project.New(*root)
-			if err != nil {
-				log.Errorf("Could not create a new project : %v", err)
-				cli.Exit(ExitFailure)
-			} else if err = config.Load(p); err != nil && err != io.EOF {
-				log.Errorf("Could not load config : %v", err)
-				cli.Exit(ExitFailure)
-			} else if err != nil {
-				p, err = project.NewWithDependencies(*root, *keepTests, false)
-				if err != nil {
-					log.Errorf("Could not create a new project : %v", err)
+			p.Dependencies.Filter = filterUsefulDependencies
+			p.Dependencies.OnDecoded = importDependency(*mainPath, false, true)
+
+			var s *pkg.Set
+			if noConfig {
+				s = pkg.NewSet()
+			} else {
+				if err := cfg.Load(); err != nil {
+					log.Errorf("Could not load config : %v", err)
 					cli.Exit(ExitFailure)
+				} else {
+					s = p.Dependencies.ToPackageSet()
 				}
 			}
-			for _, dep := range p.Dependencies {
-				for _, pkg := range dep.Packages {
-					log.Printf("%s : %v", pkg.Path, pkg.IsVendored())
+
+			s.OnAdded = importPackage(*mainPath, false)
+			if !*test {
+				s.Filter = pkg.NoTestFiles
+			}
+
+			if err := s.ListFrom(*mainPath); err != nil {
+				log.Errorf("Could not list packages : %v", err)
+				cli.Exit(ExitFailure)
+			}
+
+			for key, p := range s.Packages {
+				if !(p.IsLocal() || p.IsPseudoPackage() || p.IsStandardPackage()) {
+					if p.IsSaved() {
+						if p.IsVendored() {
+							fmt.Println(chalk.Green, key)
+						} else {
+							fmt.Println(chalk.Yellow, key)
+						}
+					} else {
+						fmt.Println(chalk.Red, key)
+					}
 				}
 			}
+			fmt.Print(chalk.Reset)
 		}
 	})
 }

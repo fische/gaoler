@@ -2,8 +2,8 @@ package formatter
 
 import "io"
 
-type IndentableEncoder interface {
-	SetIndent(prefix, indent string)
+type PrettyEncoder interface {
+	PrettyEncode(i interface{}) error
 }
 
 type Encoder interface {
