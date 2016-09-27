@@ -10,12 +10,13 @@ Usage: goaler [-v] [--config=<config-file>] [--main=<main-package>] COMMAND [arg
 A Go package manager
 
 Options:
-  -m, --main="$PWD"                 Path to the main package
-  -c, --config="$PWD/gaoler.json"   Path to the configuration file
-  -v, --verbose=false                                                                 Enable verbose mode
+  -m, --main="."                 Path to the main package
+  -c, --config="./gaoler.json"   Path to the configuration file
+  -v, --verbose=false            Enable verbose mode
 
 Commands:
   list         List dependencies of your project
+  update       Update dependencies of your project
   vendor       Vendor dependencies of your project
 
 Run 'goaler COMMAND --help' for more information on a command.
@@ -28,6 +29,7 @@ Run 'goaler COMMAND --help' for more information on a command.
 
 ## Commands
 
+* Find `main` package automatically
 * List:
   - Lists all dependencies of the project, even local ones
   - Include test dependencies with option `-t`
@@ -37,6 +39,8 @@ Run 'goaler COMMAND --help' for more information on a command.
   - Save depedencies with option `-s` to the config file
   - Load by default the config file to only vendor new packages (Use option `-f` to not use it)
   - Clean unnecessary directories (.git and unused directories)
+* Update:
+  - Update based branch updates
 
 ## VCS
 
@@ -45,6 +49,7 @@ Run 'goaler COMMAND --help' for more information on a command.
 
 ## Config
 
+* You can choose the format between YAML and JSON by changing the extension of the config file in the options
 * Scheme :
 
 ```JSON
@@ -64,28 +69,23 @@ Run 'goaler COMMAND --help' for more information on a command.
 }
 ```
 
-## Next release (0.3)
+## Next release (0.4)
 
-### Config
-
-* Let the user choose between json and yaml to save the config
-* Split test dependencies from the normal ones
-
-### Commands
-
-* Find `main` package automatically
-* Update:
-  - update using branch
-
-## Suggestion box
-
-* Write a clean documentation
 * Write tests for the whole projects (unit tests as well as E2E)
 
 ### Packages
 
 * Logger
 * Error
+
+## Suggestion box
+
+* Write a clean documentation
+* Clean README and define conventions
+
+### Config
+
+* Split test dependencies from the normal ones
 
 ### Commands
 
@@ -94,7 +94,8 @@ Run 'goaler COMMAND --help' for more information on a command.
 * Restore:
   - Restore vendor to statement as indicated in `gaoler.json`
 * Update:
-  - update using tags and similar syntax as node.js
+  - update based on GOPATH (used for packages without any remote repository or if you only want to update using GOPATH instead of the remote)
+  - update using tags and similar syntax as npm
 
 ### VCS
 
