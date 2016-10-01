@@ -52,13 +52,13 @@ func init() {
 			changed := false
 			p.Dependencies.Filter = filterUsefulDependencies
 			p.Dependencies.OnPackageAdded = func(p *pkg.Package, dep *dependency.Dependency) error {
-				if !p.IsVendored() && !dep.HasOpenedRepository() {
-					if err := dep.OpenRepository(p.Dir()); err == nil {
+				if !p.Vendored && dep.Repository == nil {
+					if err := dep.OpenRepository(p.Dir); err == nil {
 						if err = dep.LockCurrentState(); err != nil {
 							return err
 						}
 					} else {
-						log.Warnf("Could not open repository of %s : %v", p.Path(), err)
+						log.Warnf("Could not open repository of %s : %v", p.Path, err)
 					}
 				}
 				changed = true
@@ -82,7 +82,7 @@ func init() {
 
 			s.OnAdded = importPackage(*mainPath, false)
 			if !*test {
-				s.Filter = pkg.NoTestFiles
+				s.Filter = pkg.IsNotGoTestFile
 			}
 
 			if err := s.ListFrom(*mainPath); err != nil {
@@ -95,21 +95,21 @@ func init() {
 
 			var opts []func(info os.FileInfo) dependency.CleanOption
 			if !*test {
-				opts = append(opts, dependency.RemoveTestFiles)
+				opts = append(opts, dependency.RemoveGoTestFiles)
 			} else {
-				opts = append(opts, dependency.KeepTestFiles)
+				opts = append(opts, dependency.KeepGoTestFiles)
 			}
 			for _, dep := range p.Dependencies.Deps() {
 				if dep.IsVendorable() && (*force || !dep.IsVendored()) {
-					log.Printf("Cloning of %s...", dep.RootPackage())
+					log.Printf("Cloning of %s...", dep.RootPackage)
 					if err := dep.Vendor(p.Vendor()); err != nil {
-						log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage(), err)
+						log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
 					} else if err = dep.CleanVendor(p.Vendor(), opts...); err != nil {
-						log.Errorf("Could not clean repository of package %s : %v", dep.RootPackage(), err)
+						log.Errorf("Could not clean repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
 					}
-					log.Printf("Successful clone of %s", dep.RootPackage())
+					log.Printf("Successful clone of %s", dep.RootPackage)
 				}
 			}
 			if changed && *save {

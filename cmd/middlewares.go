@@ -21,8 +21,8 @@ func importPackage(srcPath string, ignoreVendor bool) func(p *pkg.Package) (stri
 			return
 		} else if err = p.Import(srcPath, ignoreVendor); err != nil {
 			return
-		} else if !p.IsStandardPackage() {
-			nextDirectory = p.Dir()
+		} else if !p.Root {
+			nextDirectory = p.Dir
 		}
 		return
 	}
@@ -40,5 +40,5 @@ func importDependency(srcPath string, ignoreVendor, force bool) func(dep *depend
 }
 
 func filterUsefulDependencies(p *pkg.Package) bool {
-	return !(p.IsLocal() || p.IsPseudoPackage() || p.IsStandardPackage())
+	return !(p.Local || p.IsPseudoPackage() || p.Root)
 }
