@@ -1,4 +1,5 @@
-gaoler
-vendor
-*.json
-*.yaml
+/gaoler
+/vendor
+/*.json
+/*.yaml
+*.coverprofile

@@ -1,9 +1,9 @@
 package pkg
 
 func (p Package) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + p.path + "\""), nil
+	return []byte("\"" + p.Path + "\""), nil
 }
 
 func (p Package) MarshalYAML() (interface{}, error) {
-	return p.path, nil
+	return p.Path, nil
 }

@@ -2,17 +2,19 @@ package pkg
 
 import (
 	"errors"
+	"go/build"
 	"path/filepath"
 	"strings"
+)
+
+var (
+	srcDirs = build.Default.SrcDirs()
 )
 
 func GetPackagePath(dir string) (string, error) {
 	for _, src := range srcDirs {
 		if strings.HasPrefix(dir, src) {
-			rel, err := filepath.Rel(src, dir)
-			if err != nil {
-				return "", err
-			}
+			rel, _ := filepath.Rel(src, dir)
 			return rel, nil
 		}
 	}

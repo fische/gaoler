@@ -1,13 +1,13 @@
 # Gaoler
 
-A Go package manager
+A Go dependency manager
 
 ## Usage
 
 ```
 Usage: goaler [-v] [--config=<config-file>] [--main=<main-package>] COMMAND [arg...]
 
-A Go package manager
+A Go dependency manager
 
 Options:
   -m, --main="."                 Path to the main package
@@ -72,6 +72,7 @@ Run 'goaler COMMAND --help' for more information on a command.
 ## Next release (0.4)
 
 * Write tests for the whole projects (unit tests as well as E2E)
+* Write a clean documentation
 
 ### Packages
 
@@ -80,7 +81,6 @@ Run 'goaler COMMAND --help' for more information on a command.
 
 ## Suggestion box
 
-* Write a clean documentation
 * Clean README and define conventions
 
 ### Config
