@@ -7,7 +7,7 @@ func (s *Set) UnmarshalJSON(data []byte) error {
 		return err
 	} else if s.OnDecoded != nil {
 		for rootPackage, dep := range s.deps {
-			dep.rootPackage = rootPackage
+			dep.RootPackage = rootPackage
 			if err = s.OnDecoded(dep); err != nil {
 				return err
 			}
@@ -21,7 +21,7 @@ func (s *Set) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	} else if s.OnDecoded != nil {
 		for rootPackage, dep := range s.deps {
-			dep.rootPackage = rootPackage
+			dep.RootPackage = rootPackage
 			if err = s.OnDecoded(dep); err != nil {
 				return err
 			}

@@ -14,7 +14,7 @@ func (d *Dependency) OpenRepository(dir string) error {
 	if repo, err = modules.OpenRepository(dir); err != nil {
 		return err
 	}
-	d.repository = repo
+	d.Repository = repo
 	return nil
 }
 
@@ -28,25 +28,21 @@ func (d *Dependency) LockCurrentState() error {
 		revision    string
 		branch      string
 	)
-	if path, err = d.repository.GetPath(); err != nil {
+	if path, err = d.Repository.GetPath(); err != nil {
 		return err
 	} else if rootPackage, err = pkg.GetPackagePath(path); err != nil {
 		return err
-	} else if remote, err = d.repository.GetRemote(); err != nil {
+	} else if remote, err = d.Repository.GetRemote(); err != nil {
 		return err
-	} else if revision, err = d.repository.GetRevision(); err != nil {
+	} else if revision, err = d.Repository.GetRevision(); err != nil {
 		return err
-	} else if branch, err = d.repository.GetBranch(); err != nil {
+	} else if branch, err = d.Repository.GetBranch(); err != nil {
 		return err
 	}
-	d.VCS = d.repository.GetVCSName()
-	d.rootPackage = rootPackage
+	d.VCS = d.Repository.GetVCSName()
+	d.RootPackage = rootPackage
 	d.Remote = remote
 	d.Revision = revision
 	d.Branch = branch
 	return nil
-}
-
-func (dep Dependency) HasOpenedRepository() bool {
-	return dep.repository != nil
 }

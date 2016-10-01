@@ -27,7 +27,7 @@ func (deps *Set) fromSet(s *pkg.Set) error {
 				added := true
 				if dep == nil {
 					dep = New(p)
-				} else if strings.HasPrefix(p.Path(), dep.RootPackage()) {
+				} else if strings.HasPrefix(p.Path, dep.RootPackage) {
 					added = dep.Add(p)
 				} else {
 					continue
@@ -41,7 +41,7 @@ func (deps *Set) fromSet(s *pkg.Set) error {
 			s.Remove(pkgPath)
 		}
 		if dep != nil {
-			deps.deps[dep.RootPackage()] = dep
+			deps.deps[dep.RootPackage] = dep
 		}
 	}
 	return nil
