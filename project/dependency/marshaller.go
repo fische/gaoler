@@ -3,9 +3,9 @@ package dependency
 import "encoding/json"
 
 func (s Set) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.deps)
+	return json.Marshal(s.Deps)
 }
 
 func (s *Set) MarshalYAML() (interface{}, error) {
-	return s.deps, nil
+	return s.Deps, nil
 }
