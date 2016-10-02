@@ -99,7 +99,7 @@ func init() {
 			} else {
 				opts = append(opts, dependency.KeepGoTestFiles)
 			}
-			for _, dep := range p.Dependencies.Deps() {
+			for _, dep := range p.Dependencies.Deps {
 				if dep.IsVendorable() && (*force || !dep.IsVendored()) {
 					log.Printf("Cloning of %s...", dep.RootPackage)
 					if err := dep.Vendor(p.Vendor()); err != nil {

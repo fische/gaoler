@@ -55,7 +55,7 @@ func init() {
 			} else {
 				opts = append(opts, dependency.KeepGoTestFiles)
 			}
-			for _, dep := range p.Dependencies.Deps() {
+			for _, dep := range p.Dependencies.Deps {
 				if dep.IsUpdatable() {
 					log.Printf("Updating %s...", dep.RootPackage)
 					if u, err := dep.Update(p.Vendor()); err != nil {
