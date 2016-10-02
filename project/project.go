@@ -8,8 +8,8 @@ import (
 )
 
 type Project struct {
-	root   string
-	vendor string
+	Root   string `json:"-" yaml:"-"`
+	Vendor string `json:"-" yaml:"-"`
 
 	Name string
 
@@ -22,17 +22,9 @@ func New(root string) (*Project, error) {
 		return nil, err
 	}
 	return &Project{
-		root:         root,
-		vendor:       filepath.Clean(root + "/vendor/"),
+		Root:         root,
+		Vendor:       filepath.Clean(root + "/vendor/"),
 		Name:         name,
 		Dependencies: dependency.NewSet(),
 	}, nil
-}
-
-func (p Project) Root() string {
-	return p.root
-}
-
-func (p Project) Vendor() string {
-	return p.vendor
 }

@@ -58,10 +58,10 @@ func init() {
 			for _, dep := range p.Dependencies.Deps {
 				if dep.IsUpdatable() {
 					log.Printf("Updating %s...", dep.RootPackage)
-					if u, err := dep.Update(p.Vendor()); err != nil {
+					if u, err := dep.Update(p.Vendor); err != nil {
 						log.Errorf("Could not load config : %v", err)
 						cli.Exit(ExitFailure)
-					} else if err = dep.CleanVendor(p.Vendor(), opts...); err != nil {
+					} else if err = dep.CleanVendor(p.Vendor, opts...); err != nil {
 						log.Errorf("Could not clean repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
 					} else {

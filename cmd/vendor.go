@@ -41,7 +41,7 @@ func init() {
 			}
 
 			if *force {
-				if err := resetDir(p.Vendor()); err != nil {
+				if err := resetDir(p.Vendor); err != nil {
 					log.Errorf("Could not reset vendor directory : %v", err)
 					cli.Exit(ExitFailure)
 				}
@@ -102,10 +102,10 @@ func init() {
 			for _, dep := range p.Dependencies.Deps {
 				if dep.IsVendorable() && (*force || !dep.IsVendored()) {
 					log.Printf("Cloning of %s...", dep.RootPackage)
-					if err := dep.Vendor(p.Vendor()); err != nil {
+					if err := dep.Vendor(p.Vendor); err != nil {
 						log.Errorf("Could not clone repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
-					} else if err = dep.CleanVendor(p.Vendor(), opts...); err != nil {
+					} else if err = dep.CleanVendor(p.Vendor, opts...); err != nil {
 						log.Errorf("Could not clean repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
 					}
