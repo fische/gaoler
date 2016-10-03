@@ -14,4 +14,4 @@ ratings:
   - "**.go"
 
 exclude_paths:
-- **/testdata/
+- "**/testdata/"
