@@ -2,6 +2,7 @@ package git
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,6 +54,9 @@ func OpenRepository(path string) (vcs.Repository, error) {
 		return nil, errors.New(string(p))
 	} else if err = os.Chdir(dir); err != nil {
 		return nil, err
+	} else if len(p) == 0 {
+		// TODO: Implement support for bare repositories
+		return nil, errors.New("Do not support bare repository")
 	}
 	return &Repository{
 		Path: string(p[:len(p)-1]),
@@ -95,7 +99,7 @@ func (r Repository) GetRemote() (string, error) {
 			return res[2], nil
 		}
 	}
-	return "", nil
+	return "", fmt.Errorf("Could not find remote : %s", defaultRemoteName)
 }
 
 func (r Repository) AddRemote(remote string) error {
@@ -144,19 +148,7 @@ func (r Repository) CheckoutBranch(branch string) error {
 }
 
 func (r Repository) GetPath() (string, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	} else if err = os.Chdir(r.Path); err != nil {
-		return "", err
-	}
-	var path []byte
-	if path, err = exec.Command(cmd, "rev-parse", "--show-toplevel").CombinedOutput(); err != nil {
-		return "", errors.New(string(path))
-	} else if err = os.Chdir(dir); err != nil {
-		return "", err
-	}
-	return string(path[:len(path)-1]), nil
+	return r.Path, nil
 }
 
 func (r Repository) GetBranch() (string, error) {
@@ -171,6 +163,8 @@ func (r Repository) GetBranch() (string, error) {
 		return "", errors.New(string(path))
 	} else if err = os.Chdir(dir); err != nil {
 		return "", err
+	} else if len(path) <= 1 {
+		return "", errors.New("No branch found")
 	}
 	return string(path[:len(path)-1]), nil
 }
