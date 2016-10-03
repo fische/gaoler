@@ -166,21 +166,27 @@ var _ = Describe("Repository", func() {
 
 	Describe("Methods", func() {
 		var (
-			r *Repository
+			r    *Repository
+			path string
 		)
 
 		BeforeEach(func() {
 			r = &Repository{
 				Path: "testdata/repo",
 			}
-			resetDirectory(r.Path)
-			if o, err := exec.Command("git", "init", r.Path).CombinedOutput(); err != nil {
+			wd, err := os.Getwd()
+			if err != nil {
+				log.Fatalf("Could not get working directory : %v", err)
+			}
+			path = filepath.Clean(wd + "/testdata/repo")
+			resetDirectory(path)
+			if o, err := exec.Command("git", "init", path).CombinedOutput(); err != nil {
 				log.Fatalf("Could not init repository : %s", string(o))
 			}
 		})
 
 		AfterEach(func() {
-			removeDirectory(r.Path)
+			removeDirectory(path)
 		})
 
 		Describe("GetRevision", func() {
@@ -202,7 +208,7 @@ var _ = Describe("Repository", func() {
 			Context("With a valid git repository with some commits", func() {
 				BeforeEach(func() {
 					dir, _ := os.Getwd()
-					os.Chdir(r.Path)
+					os.Chdir(path)
 					defer os.Chdir(dir)
 					if o, err := exec.Command("git", "commit", "--allow-empty", "-m", `"Test"`).CombinedOutput(); err != nil {
 						log.Fatalf("Could not commit : %s", string(o))
@@ -242,7 +248,7 @@ var _ = Describe("Repository", func() {
 
 				BeforeEach(func() {
 					dir, _ := os.Getwd()
-					os.Chdir(r.Path)
+					os.Chdir(path)
 					defer os.Chdir(dir)
 					remoteTest = "testremote"
 					if o, err := exec.Command("git", "remote", "add", "origin", remoteTest).CombinedOutput(); err != nil {
@@ -273,7 +279,7 @@ var _ = Describe("Repository", func() {
 			Context("With an existing remote", func() {
 				BeforeEach(func() {
 					dir, _ := os.Getwd()
-					os.Chdir(r.Path)
+					os.Chdir(path)
 					defer os.Chdir(dir)
 					remote = "testremote"
 					if o, err := exec.Command("git", "remote", "add", "origin", remote).CombinedOutput(); err != nil {
@@ -324,7 +330,7 @@ var _ = Describe("Repository", func() {
 			Context("With a valid git repository without any remote", func() {
 				BeforeEach(func() {
 					dir, _ := os.Getwd()
-					os.Chdir(r.Path)
+					os.Chdir(path)
 					defer os.Chdir(dir)
 					var rev []byte
 					if o, err := exec.Command("git", "commit", "--allow-empty", "-m", `"Test"`).CombinedOutput(); err != nil {
@@ -365,7 +371,7 @@ var _ = Describe("Repository", func() {
 			Context("With a valid git repository without any remote", func() {
 				BeforeEach(func() {
 					dir, _ := os.Getwd()
-					os.Chdir(r.Path)
+					os.Chdir(path)
 					defer os.Chdir(dir)
 					branch = "test"
 					if o, err := exec.Command("git", "commit", "--allow-empty", "-m", `"Test"`).CombinedOutput(); err != nil {
@@ -400,7 +406,7 @@ var _ = Describe("Repository", func() {
 			Context("With a valid branch", func() {
 				BeforeEach(func() {
 					dir, _ := os.Getwd()
-					os.Chdir(r.Path)
+					os.Chdir(path)
 					defer os.Chdir(dir)
 					branch = "Branch"
 					if o, err := exec.Command("git", "commit", "--allow-empty", "-m", `"Test"`).CombinedOutput(); err != nil {
