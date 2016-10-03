@@ -180,8 +180,14 @@ var _ = Describe("Repository", func() {
 			}
 			path = filepath.Clean(wd + "/testdata/repo")
 			resetDirectory(path)
-			if o, err := exec.Command("git", "init", path).CombinedOutput(); err != nil {
+			os.Chdir(path)
+			defer os.Chdir(wd)
+			if o, err := exec.Command("git", "init").CombinedOutput(); err != nil {
 				log.Fatalf("Could not init repository : %s", string(o))
+			} else if o, err := exec.Command("git", "config", "--global", "user.email", `"you@example.com"`).CombinedOutput(); err != nil {
+				log.Fatalf("Could not setup user email : %s", string(o))
+			} else if o, err := exec.Command("git", "config", "--global", "user.name", `"Your Name"`).CombinedOutput(); err != nil {
+				log.Fatalf("Could not setup user name : %s", string(o))
 			}
 		})
 
