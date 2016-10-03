@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 
 	"github.com/fische/gaoler/vcs"
@@ -23,20 +24,17 @@ var (
 )
 
 func InitRepository(path string, bare bool) (vcs.Repository, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	} else if err = os.Chdir(path); err != nil {
+	var err error
+	if path, err = filepath.Abs(path); err != nil {
 		return nil, err
 	}
 	args := []string{"init"}
 	if bare {
 		args = append(args, "--bare")
 	}
+	args = append(args, path)
 	if o, err := exec.Command(cmd, args...).CombinedOutput(); err != nil {
 		return nil, errors.New(string(o))
-	} else if err = os.Chdir(dir); err != nil {
-		return nil, err
 	}
 	return &Repository{
 		Path: path,

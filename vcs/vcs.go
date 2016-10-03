@@ -29,7 +29,7 @@ func CloneRepository(v VCS, repo Repository, path string) (Repository, error) {
 		return nil, err
 	} else if remote, err := repo.GetRemote(); err != nil {
 		return nil, err
-	} else if ret, err = CloneAtRevision(v, path, rev, remote); err != nil {
+	} else if ret, err = CloneAtRevision(v, remote, rev, path); err != nil {
 		return nil, err
 	}
 	return ret, nil

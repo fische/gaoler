@@ -79,8 +79,6 @@ var _ = Describe("Vendor", func() {
 
 		Context("When opening VCS reposity succeeds", func() {
 			var (
-				fetched bool
-
 				repo *Repository
 			)
 
@@ -92,10 +90,8 @@ var _ = Describe("Vendor", func() {
 				dep.Revision = "Revision"
 				dep.RootPackage = "RootPackage"
 
-				fetched = false
 				repo = &Repository{
 					fetch: func() error {
-						fetched = true
 						return nil
 					},
 					addRemote: func(remote string) error {
@@ -118,10 +114,6 @@ var _ = Describe("Vendor", func() {
 
 			It("should not return an error", func() {
 				Expect(err).To(BeNil())
-			})
-
-			It("should have fetched repository", func() {
-				Expect(fetched).To(BeTrue())
 			})
 
 			It("should set dependency repository", func() {
