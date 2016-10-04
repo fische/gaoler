@@ -8,15 +8,14 @@ import (
 )
 
 type Decoder struct {
-	r io.Reader
+	Reader io.Reader
 }
 
-func (e *Decoder) Decode(obj interface{}) error {
-	data, err := ioutil.ReadAll(e.r)
+func (d *Decoder) Decode(obj interface{}) error {
+	data, err := ioutil.ReadAll(d.Reader)
 	if err != nil {
 		return err
-	}
-	if len(data) == 0 {
+	} else if len(data) == 0 {
 		return io.EOF
 	}
 	return yaml.Unmarshal(data, obj)
