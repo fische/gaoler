@@ -8,24 +8,20 @@ import (
 )
 
 type Package struct {
-	dir  string
-	path string
+	Dir  string
+	Path string
 
-	root     bool
-	local    bool
-	saved    bool
-	vendored bool
+	Root     bool
+	Local    bool
+	Saved    bool
+	Vendored bool
 
 	// TODO: importedBy []string
 }
 
-var (
-	srcDirs = build.Default.SrcDirs()
-)
-
 func New(packagePath string) *Package {
 	return &Package{
-		path: packagePath,
+		Path: packagePath,
 	}
 }
 
@@ -38,43 +34,19 @@ func (p *Package) Import(srcPath string, ignoreVendor bool) error {
 	if ignoreVendor {
 		f |= build.IgnoreVendor
 	}
-	imp, err := build.Import(p.path, srcPath, f)
+	imp, err := build.Import(p.Path, srcPath, f)
 	if err != nil {
 		return err
 	}
-	p.dir = imp.Dir
-	p.root = imp.Goroot
+	p.Dir = imp.Dir
+	p.Root = imp.Goroot
 	if !ignoreVendor {
-		p.vendored = strings.HasPrefix(p.dir, filepath.Clean(srcPath+"/vendor/"))
+		p.Vendored = strings.HasPrefix(p.Dir, filepath.Clean(srcPath+"/vendor/"))
 	}
-	p.local = !p.vendored && strings.HasPrefix(p.dir, srcPath)
+	p.Local = !p.Vendored && strings.HasPrefix(p.Dir, srcPath)
 	return nil
 }
 
-func (p Package) Path() string {
-	return p.path
-}
-
-func (p Package) Dir() string {
-	return p.dir
-}
-
 func (p Package) IsPseudoPackage() bool {
-	return IsPseudoPackage(p.path)
-}
-
-func (p Package) IsStandardPackage() bool {
-	return p.root
-}
-
-func (p Package) IsSaved() bool {
-	return p.saved
-}
-
-func (p Package) IsVendored() bool {
-	return p.vendored
-}
-
-func (p Package) IsLocal() bool {
-	return p.local
+	return IsPseudoPackage(p.Path)
 }

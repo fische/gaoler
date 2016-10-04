@@ -27,6 +27,16 @@ func GetVCS(vcsName string) vcs.VCS {
 	return impl[vcsName]
 }
 
+func VCS() []string {
+	ret := make([]string, len(impl))
+	idx := 0
+	for v := range impl {
+		ret[idx] = v
+		idx++
+	}
+	return ret
+}
+
 func init() {
 	// Register modules here
 	Register(&git.Git{})

@@ -7,8 +7,10 @@ import (
 
 const (
 	testExtension = "_test.go"
+	testdataDir   = "testdata"
 )
 
-func NoTestFiles(info os.FileInfo) bool {
-	return !strings.HasSuffix(info.Name(), testExtension)
+func IsNotGoTestFile(info os.FileInfo) bool {
+	return (!info.IsDir() && !strings.HasSuffix(info.Name(), testExtension)) ||
+		(info.IsDir() && info.Name() != testdataDir)
 }

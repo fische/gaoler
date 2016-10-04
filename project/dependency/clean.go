@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/fische/gaoler/pkg"
 )
 
 type CleanOption uint8
@@ -15,27 +16,23 @@ const (
 	Remove
 )
 
-func RemoveTestFiles(info os.FileInfo) CleanOption {
-	if !info.IsDir() {
-		if strings.HasSuffix(info.Name(), "_test.go") {
-			return Remove
-		}
-	} else if info.Name() == "testdata" {
-		return Remove
+func RemoveGoTestFiles(info os.FileInfo) CleanOption {
+	if pkg.IsNotGoTestFile(info) {
+		return Pass
 	}
-	return Pass
+	return Remove
 }
 
-func KeepTestFiles(info os.FileInfo) CleanOption {
-	if info.IsDir() && info.Name() == "testdata" {
+func KeepGoTestFiles(info os.FileInfo) CleanOption {
+	if !pkg.IsNotGoTestFile(info) && info.IsDir() {
 		return SkipDir
 	}
 	return Pass
 }
 
 func (d Dependency) CleanVendor(vendorRoot string, checkers ...func(info os.FileInfo) CleanOption) error {
-	root := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.rootPackage))
-	removeRootFiles := !d.HasPackage(d.rootPackage)
+	root := filepath.Clean(fmt.Sprintf("%s/%s/", vendorRoot, d.RootPackage))
+	removeRootFiles := !d.HasPackage(d.RootPackage)
 	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err == nil {
 			for _, checker := range checkers {
@@ -44,12 +41,17 @@ func (d Dependency) CleanVendor(vendorRoot string, checkers ...func(info os.File
 				} else if opt == SkipDir && info.IsDir() {
 					return filepath.SkipDir
 				} else if opt == Remove {
-					return os.RemoveAll(path)
+					if err = os.RemoveAll(path); err != nil {
+						return err
+					} else if info.IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
 				}
 			}
 			if info.IsDir() {
 				var rel string
-				if rel, err = filepath.Rel(vendorRoot, path); err == nil && rel != d.rootPackage && !d.HasPackage(rel) {
+				if rel, err = filepath.Rel(vendorRoot, path); err == nil && rel != d.RootPackage && !d.HasPackage(rel) {
 					if err = os.RemoveAll(path); err != nil {
 						return err
 					}

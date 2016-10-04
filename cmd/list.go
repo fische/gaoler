@@ -55,7 +55,7 @@ func init() {
 
 			s.OnAdded = importPackage(*mainPath, false)
 			if !*test {
-				s.Filter = pkg.NoTestFiles
+				s.Filter = pkg.IsNotGoTestFile
 			}
 
 			if err := s.ListFrom(*mainPath); err != nil {
@@ -64,9 +64,9 @@ func init() {
 			}
 
 			for key, p := range s.Packages {
-				if !(p.IsLocal() || p.IsPseudoPackage() || p.IsStandardPackage()) {
-					if p.IsSaved() {
-						if p.IsVendored() {
+				if !(p.Local || p.IsPseudoPackage() || p.Root) {
+					if p.Saved {
+						if p.Vendored {
 							fmt.Println(chalk.Green, key)
 						} else {
 							fmt.Println(chalk.Yellow, key)

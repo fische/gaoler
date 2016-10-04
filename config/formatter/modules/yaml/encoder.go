@@ -7,7 +7,7 @@ import (
 )
 
 type Encoder struct {
-	w io.Writer
+	Writer io.Writer
 }
 
 func (e *Encoder) Encode(obj interface{}) error {
@@ -15,7 +15,7 @@ func (e *Encoder) Encode(obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = e.w.Write(data)
+	_, err = e.Writer.Write(data)
 	return err
 }
 

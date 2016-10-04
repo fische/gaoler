@@ -6,26 +6,26 @@ import (
 )
 
 type Dependency struct {
-	rootPackage string
+	RootPackage string `json:"-" yaml:"-"`
 
-	repository vcs.Repository
-	VCS        string `json:",omitempty" yaml:",omitempty"`
-	Revision   string `json:",omitempty" yaml:",omitempty"`
-	Remote     string `json:",omitempty" yaml:",omitempty"`
-	Branch     string `json:",omitempty" yaml:",omitempty"`
+	Repository vcs.Repository `json:"-" yaml:"-"`
+	VCS        string         `json:",omitempty" yaml:",omitempty"`
+	Revision   string         `json:",omitempty" yaml:",omitempty"`
+	Remote     string         `json:",omitempty" yaml:",omitempty"`
+	Branch     string         `json:",omitempty" yaml:",omitempty"`
 
 	Packages []*pkg.Package
 }
 
 func New(p *pkg.Package) *Dependency {
 	return &Dependency{
-		rootPackage: p.Path(),
+		RootPackage: p.Path,
 		Packages:    []*pkg.Package{p},
 	}
 }
 
 func (d *Dependency) Add(p *pkg.Package) (added bool) {
-	if d.HasPackage(p.Path()) {
+	if d.HasPackage(p.Path) {
 		return
 	}
 	added = true
@@ -33,13 +33,9 @@ func (d *Dependency) Add(p *pkg.Package) (added bool) {
 	return
 }
 
-func (d Dependency) RootPackage() string {
-	return d.rootPackage
-}
-
 func (d Dependency) IsVendored() bool {
 	for _, p := range d.Packages {
-		if !p.IsVendored() {
+		if !p.Vendored {
 			return false
 		}
 	}
@@ -48,7 +44,7 @@ func (d Dependency) IsVendored() bool {
 
 func (d Dependency) HasPackage(packagePath string) bool {
 	for _, pkg := range d.Packages {
-		if pkg.Path() == packagePath {
+		if pkg.Path == packagePath {
 			return true
 		}
 	}

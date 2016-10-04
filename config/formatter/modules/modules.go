@@ -23,6 +23,14 @@ func GetFormatter(ext string) formatter.Factory {
 	return nil
 }
 
+func Formatters() []string {
+	var ret []string
+	for _, v := range impl {
+		ret = append(ret, v.Types()...)
+	}
+	return ret
+}
+
 func init() {
 	// Register modules here
 	impl = []formatter.Factory{

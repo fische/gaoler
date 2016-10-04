@@ -1,0 +1,22 @@
+language: go
+
+os:
+  - linux
+  - osx
+
+go:
+  - 1.7
+  - tip
+
+before_install:
+  - go get github.com/modocache/gover
+  - go get github.com/mattn/goveralls
+  - go get github.com/onsi/ginkgo/ginkgo
+  - go get github.com/onsi/gomega
+  - go get -v -t ./...
+
+script:
+  - go build
+  - ginkgo -r --randomizeAllSpecs --randomizeSuites --cover --trace --race --progress --compilers=2
+  - gover
+  - goveralls -service travis-ci -coverprofile=gover.coverprofile -repotoken $COVERALLS_TOKEN

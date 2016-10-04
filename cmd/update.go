@@ -51,23 +51,23 @@ func init() {
 				updated bool
 			)
 			if !*test {
-				opts = append(opts, dependency.RemoveTestFiles)
+				opts = append(opts, dependency.RemoveGoTestFiles)
 			} else {
-				opts = append(opts, dependency.KeepTestFiles)
+				opts = append(opts, dependency.KeepGoTestFiles)
 			}
-			for _, dep := range p.Dependencies.Deps() {
+			for _, dep := range p.Dependencies.Deps {
 				if dep.IsUpdatable() {
-					log.Printf("Updating %s...", dep.RootPackage())
-					if u, err := dep.Update(p.Vendor()); err != nil {
+					log.Printf("Updating %s...", dep.RootPackage)
+					if u, err := dep.Update(p.Vendor); err != nil {
 						log.Errorf("Could not load config : %v", err)
 						cli.Exit(ExitFailure)
-					} else if err = dep.CleanVendor(p.Vendor(), opts...); err != nil {
-						log.Errorf("Could not clean repository of package %s : %v", dep.RootPackage(), err)
+					} else if err = dep.CleanVendor(p.Vendor, opts...); err != nil {
+						log.Errorf("Could not clean repository of package %s : %v", dep.RootPackage, err)
 						cli.Exit(ExitFailure)
 					} else {
 						updated = updated || u
 					}
-					log.Printf("Successful update of %s", dep.RootPackage())
+					log.Printf("Successful update of %s", dep.RootPackage)
 				}
 			}
 			if updated && *save {

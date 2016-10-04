@@ -11,9 +11,9 @@ import (
 )
 
 type Config struct {
-	file    *os.File
-	format  formatter.Factory
-	project *project.Project
+	File    *os.File
+	Format  formatter.Factory
+	Project *project.Project
 }
 
 const (
@@ -23,38 +23,38 @@ const (
 func New(p *project.Project, configPath string, flags Flags) (*Config, error) {
 	var (
 		cfg = &Config{
-			project: p,
+			Project: p,
 		}
 		err error
 	)
-	if cfg.file, err = os.OpenFile(configPath, flags.OpenFlags(), openPerm); err != nil {
+	if cfg.File, err = os.OpenFile(configPath, flags.OpenFlags(), openPerm); err != nil {
 		return nil, err
 	}
-	ext := filepath.Ext(cfg.file.Name())
+	ext := filepath.Ext(cfg.File.Name())
 	if len(ext) > 0 && ext[0] == '.' {
 		ext = ext[1:]
 	}
-	if cfg.format = modules.GetFormatter(ext); cfg.format == nil {
+	if cfg.Format = modules.GetFormatter(ext); cfg.Format == nil {
 		return nil, errors.New("Could not find formatter")
 	}
 	return cfg, nil
 }
 
 func (cfg Config) Save() error {
-	if offset, err := cfg.file.Seek(0, 0); err != nil {
+	if offset, err := cfg.File.Seek(0, 0); err != nil {
 		return err
 	} else if offset != 0 {
 		return errors.New("Could not seek beginning of the config")
-	} else if err = cfg.file.Truncate(0); err != nil {
+	} else if err = cfg.File.Truncate(0); err != nil {
 		return err
 	}
-	e := cfg.format.NewEncoder(cfg.file)
+	e := cfg.Format.NewEncoder(cfg.File)
 	if i, ok := e.(formatter.PrettyEncoder); ok {
-		return i.PrettyEncode(cfg.project)
+		return i.PrettyEncode(cfg.Project)
 	}
-	return e.Encode(cfg.project)
+	return e.Encode(cfg.Project)
 }
 
 func (cfg *Config) Load() error {
-	return cfg.format.NewDecoder(cfg.file).Decode(cfg.project)
+	return cfg.Format.NewDecoder(cfg.File).Decode(cfg.Project)
 }

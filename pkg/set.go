@@ -52,12 +52,12 @@ func (s *Set) list(directories []string, fset *token.FileSet) error {
 
 func (s *Set) Insert(p *Package, force bool) (added bool) {
 	if !force {
-		if _, ok := s.Packages[p.Path()]; ok {
+		if _, ok := s.Packages[p.Path]; ok {
 			return
 		}
 	}
 	added = true
-	s.Packages[p.Path()] = p
+	s.Packages[p.Path] = p
 	return
 }
 
