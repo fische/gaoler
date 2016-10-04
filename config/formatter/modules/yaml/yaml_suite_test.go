@@ -29,5 +29,5 @@ func (r testWriter) Write(p []byte) (n int, err error) {
 
 func TestYaml(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Yaml Suite")
+	RunSpecs(t, "YAML Suite")
 }
