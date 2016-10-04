@@ -71,7 +71,8 @@ Run 'goaler COMMAND --help' for more information on a command.
 
 ## Next release (0.4)
 
-* Write tests for the whole projects (unit tests as well as E2E)
+* Unit tests
+* E2E tests
 * Write a clean documentation
 
 ### Packages
