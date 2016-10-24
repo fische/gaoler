@@ -5,26 +5,23 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fische/gaoler/config/formatter"
-	"github.com/fische/gaoler/config/formatter/modules"
+	"github.com/fische/gaoler/internal/config/formatter"
+	"github.com/fische/gaoler/internal/config/formatter/modules"
 	"github.com/fische/gaoler/project"
 )
 
 type Config struct {
-	File    *os.File
-	Format  formatter.Factory
-	Project *project.Project
+	file   *os.File
+	format formatter.Factory
 }
 
 const (
 	openPerm = 0664
 )
 
-func New(p *project.Project, configPath string, flags Flags) (*Config, error) {
+func New(configPath string, flags Flags) (*Config, error) {
 	var (
-		cfg = &Config{
-			Project: p,
-		}
+		cfg = &Config{}
 		err error
 	)
 	if cfg.File, err = os.OpenFile(configPath, flags.OpenFlags(), openPerm); err != nil {
@@ -40,7 +37,7 @@ func New(p *project.Project, configPath string, flags Flags) (*Config, error) {
 	return cfg, nil
 }
 
-func (cfg Config) Save() error {
+func (cfg Config) Save(p *project.Project) error {
 	if offset, err := cfg.File.Seek(0, 0); err != nil {
 		return err
 	} else if offset != 0 {
@@ -50,11 +47,11 @@ func (cfg Config) Save() error {
 	}
 	e := cfg.Format.NewEncoder(cfg.File)
 	if i, ok := e.(formatter.PrettyEncoder); ok {
-		return i.PrettyEncode(cfg.Project)
+		return i.PrettyEncode(p)
 	}
-	return e.Encode(cfg.Project)
+	return e.Encode(p)
 }
 
-func (cfg *Config) Load() error {
-	return cfg.Format.NewDecoder(cfg.File).Decode(cfg.Project)
+func (cfg *Config) Load(p *project.Project) error {
+	return cfg.Format.NewDecoder(cfg.File).Decode(p)
 }

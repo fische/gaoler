@@ -1,9 +1,9 @@
 package modules
 
 import (
-	"github.com/fische/gaoler/config/formatter"
-	"github.com/fische/gaoler/config/formatter/modules/json"
-	"github.com/fische/gaoler/config/formatter/modules/yaml"
+	"github.com/fische/gaoler/internal/config/formatter"
+	"github.com/fische/gaoler/internal/config/formatter/modules/json"
+	"github.com/fische/gaoler/internal/config/formatter/modules/yaml"
 )
 
 var impl []formatter.Factory

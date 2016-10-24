@@ -1,25 +1,26 @@
-package yaml
+package json
 
 import (
+	"encoding/json"
 	"io"
 
-	"github.com/fische/gaoler/config/formatter"
+	"github.com/fische/gaoler/internal/config/formatter"
 )
 
 type Factory struct{}
 
 const (
-	typeName = "yaml"
+	typeName = "json"
 )
 
 func (f Factory) NewEncoder(w io.Writer) formatter.Encoder {
-	return NewEncoder(w)
+	return &Encoder{json.NewEncoder(w)}
 }
 
 func (f Factory) NewDecoder(r io.Reader) formatter.Decoder {
-	return NewDecoder(r)
+	return json.NewDecoder(r)
 }
 
 func (f Factory) Types() []string {
-	return []string{typeName, "yml"}
+	return []string{typeName}
 }
