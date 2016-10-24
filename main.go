@@ -4,7 +4,7 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/fische/gaoler/cmd"
+	"github.com/fische/gaoler/internal/cmd"
 )
 
 func main() {
