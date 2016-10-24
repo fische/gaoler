@@ -3,28 +3,28 @@ package project
 import (
 	"path/filepath"
 
-	"github.com/fische/gaoler/pkg"
 	"github.com/fische/gaoler/project/dependency"
 )
 
 type Project struct {
-	Root   string `json:"-" yaml:"-"`
-	Vendor string `json:"-" yaml:"-"`
+	rootPath   string
+	vendorPath string
 
-	Name string
-
-	Dependencies *dependency.Set
+	*dependency.Set
 }
 
-func New(root string) (*Project, error) {
-	name, err := pkg.GetPackagePath(root)
-	if err != nil {
-		return nil, err
-	}
+func New(rootPath string) *Project {
 	return &Project{
-		Root:         root,
-		Vendor:       filepath.Clean(root + "/vendor/"),
-		Name:         name,
-		Dependencies: dependency.NewSet(),
-	}, nil
+		rootPath:   rootPath,
+		vendorPath: filepath.Clean(rootPath + "/vendor/"),
+		Set:        dependency.NewSet(),
+	}
+}
+
+func (p Project) RootPath() string {
+	return p.rootPath
+}
+
+func (p Project) VendorPath() string {
+	return p.vendorPath
 }
