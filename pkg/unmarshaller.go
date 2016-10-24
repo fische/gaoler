@@ -4,17 +4,17 @@ import "errors"
 
 func (p *Package) UnmarshalJSON(data []byte) error {
 	if data[0] == '"' && data[len(data)-1] == '"' {
-		p.Path = string(data[1 : len(data)-1])
-		p.Saved = true
+		p.path = string(data[1 : len(data)-1])
+		p.saved = true
 		return nil
 	}
 	return errors.New("Could not unmarshal package")
 }
 
 func (p *Package) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	if err := unmarshal(&p.Path); err != nil {
+	if err := unmarshal(&p.path); err != nil {
 		return err
 	}
-	p.Saved = true
+	p.saved = true
 	return nil
 }

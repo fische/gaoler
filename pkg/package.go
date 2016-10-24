@@ -1,32 +1,33 @@
 package pkg
 
 import (
-	"go/ast"
 	"go/build"
 	"path/filepath"
 	"strings"
 )
 
 type Package struct {
-	Dir  string
-	Path string
+	dir  string
+	path string
 
-	Root     bool
-	Local    bool
-	Saved    bool
-	Vendored bool
-
-	// TODO: importedBy []string
+	root     bool
+	local    bool
+	saved    bool
+	vendored bool
 }
 
 func New(packagePath string) *Package {
 	return &Package{
-		Path: packagePath,
+		path: packagePath,
 	}
 }
 
-func NewFromImport(imp *ast.ImportSpec) *Package {
-	return New(GetPackagePathFromImport(imp))
+func Import(packagePath, srcPath string, ignoreVendor bool) (*Package, error) {
+	p := New(packagePath)
+	if err := p.Import(srcPath, ignoreVendor); err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 func (p *Package) Import(srcPath string, ignoreVendor bool) error {
@@ -34,19 +35,43 @@ func (p *Package) Import(srcPath string, ignoreVendor bool) error {
 	if ignoreVendor {
 		f |= build.IgnoreVendor
 	}
-	imp, err := build.Import(p.Path, srcPath, f)
+	imp, err := build.Import(p.path, srcPath, f)
 	if err != nil {
 		return err
 	}
-	p.Dir = imp.Dir
-	p.Root = imp.Goroot
+	p.dir = imp.Dir
+	p.root = imp.Goroot
 	if !ignoreVendor {
-		p.Vendored = strings.HasPrefix(p.Dir, filepath.Clean(srcPath+"/vendor/"))
+		p.vendored = strings.HasPrefix(p.dir, filepath.Clean(srcPath+"/vendor/"))
 	}
-	p.Local = !p.Vendored && strings.HasPrefix(p.Dir, srcPath)
+	p.local = !p.vendored && strings.HasPrefix(p.dir, srcPath)
 	return nil
 }
 
+func (p Package) Dir() string {
+	return p.dir
+}
+
+func (p Package) Path() string {
+	return p.path
+}
+
+func (p Package) IsStandardPackage() bool {
+	return p.root
+}
+
+func (p Package) IsLocal() bool {
+	return p.local
+}
+
+func (p Package) IsSaved() bool {
+	return p.saved
+}
+
+func (p Package) IsVendored() bool {
+	return p.vendored
+}
+
 func (p Package) IsPseudoPackage() bool {
-	return IsPseudoPackage(p.Path)
+	return IsPseudoPackage(p.path)
 }
