@@ -50,7 +50,7 @@ func init() {
 			diff := p.Diff(s)
 			remaining := dependency.NewSet()
 			remaining.OnPackageAdded = func(p *pkg.Package, dep *dependency.Dependency) error {
-				if p.Dir() != "" {
+				if p.Dir() != "" && !dep.HasOpenedRepository() {
 					if err := dep.OpenRepository(p.Dir()); err == nil {
 						return dep.SetRootPackage()
 					}
@@ -91,22 +91,22 @@ func init() {
 					newline = true
 				}
 				if dep.IsRemoved() {
-					out += removedDependency("❌ ")
+					out += removedDependency("➖ ")
 					removed++
 				} else {
 					out += untouchedDependency("• ")
 					untouched++
 				}
-				out += dependencyColor("%s ", rootPackage) + "(" + addedPackage("++%d ", len(dep.Added().Packages())) + removedPackage("--%d", len(dep.Removed().Packages())) + ")\n"
+				out += dependencyColor("%s ", rootPackage) + "(" + addedPackage("%d added ", len(dep.Added().Packages())) + removedPackage("%d removed", len(dep.Removed().Packages())) + ")\n"
 				if *list {
 					for _, p := range dep.Untouched().Packages() {
-						out += untouchedPackage("\t   ") + packageColor("%s\n", p.Path())
+						out += untouchedPackage("\t\t ") + packageColor("%s\n", p.Path())
 					}
 					for _, p := range dep.Removed().Packages() {
-						out += removedPackage("\t-- ") + packageColor("%s\n", p.Path())
+						out += removedPackage("\tremoved\t ") + packageColor("%s\n", p.Path())
 					}
 					for _, p := range dep.Added().Packages() {
-						out += addedPackage("\t++ ") + packageColor("%s\n", p.Path())
+						out += addedPackage("\tadded\t ") + packageColor("%s\n", p.Path())
 					}
 				}
 			}
@@ -116,10 +116,10 @@ func init() {
 				} else {
 					newline = true
 				}
-				out += addedDependency("➕ ") + dependencyColor("%s ", rootPackage) + "(" + addedPackage("++%d ", len(dep.Packages())) + removedPackage("--0") + ")\n"
+				out += addedDependency("➕ ") + dependencyColor("%s ", rootPackage) + "(" + addedPackage("%d added ", len(dep.Packages())) + removedPackage("0 removed") + ")\n"
 				if *list {
 					for _, p := range dep.Packages() {
-						out += addedPackage("\t++ ") + packageColor("%s\n", p.Path())
+						out += addedPackage("\tadded\t ") + packageColor("%s\n", p.Path())
 					}
 				}
 				added++

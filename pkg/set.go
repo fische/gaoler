@@ -100,3 +100,21 @@ func (s Set) Has(packagePath string) bool {
 func (s Set) Packages() map[string]*Package {
 	return s.packages
 }
+
+func (s Set) IsVendored() bool {
+	for _, p := range s.Packages() {
+		if !p.IsVendored() {
+			return false
+		}
+	}
+	return true
+}
+
+func (s Set) IsSaved() bool {
+	for _, p := range s.Packages() {
+		if !p.IsSaved() {
+			return false
+		}
+	}
+	return true
+}

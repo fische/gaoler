@@ -2,7 +2,6 @@ package dependency
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/fische/gaoler/pkg"
 	"github.com/fische/gaoler/vcs"
@@ -23,16 +22,6 @@ func New(p *pkg.Package) *Dependency {
 		rootPackage: p.Path(),
 		Set:         s,
 	}
-}
-
-func (d *Dependency) Add(p *pkg.Package) (added bool) {
-	added = d.Set.Insert(p, false)
-	if added {
-		if strings.HasPrefix(d.rootPackage, p.Path()) && d.rootPackage != p.Path() {
-			d.rootPackage = p.Path()
-		}
-	}
-	return
 }
 
 func (d *Dependency) SetRootPackage() error {
@@ -73,11 +62,6 @@ func (d Dependency) Repository() vcs.Repository {
 	return d.repository
 }
 
-func (d Dependency) IsVendored() bool {
-	for _, p := range d.Set.Packages() {
-		if !p.IsVendored() {
-			return false
-		}
-	}
-	return true
+func (d Dependency) HasOpenedRepository() bool {
+	return d.repository != nil
 }
