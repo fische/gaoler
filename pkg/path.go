@@ -28,7 +28,7 @@ func GetPackagePath(dir string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			matchs := vendorRule.FindAllString(rel, -1)
+			matchs := vendorRule.Split(rel, -1)
 			return matchs[len(matchs)-1], nil
 		}
 	}

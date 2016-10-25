@@ -12,31 +12,31 @@ import (
 
 var (
 	Gaoler = cli.App("goaler", "A Go package manager")
+	ctx    = middleware.NewContext()
 
 	ExitSuccess = 0
 	ExitFailure = 1
+
+	rootPath   *string
+	configPath *string
 )
 
 func init() {
-	ctx := middleware.NewContext()
-
-	wd, err := os.Getwd()
-	if err != nil {
+	var dir string
+	if wd, err := os.Getwd(); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get working directory : %v\n", err)
 		cli.Exit(ExitFailure)
-	}
-	dir, err := project.GetProjectRootFromDir(wd)
-	if err != nil {
+	} else if dir, err = project.GetProjectRootFromDir(wd); err != nil {
 		dir = wd
 	}
-	rootPath := Gaoler.StringOpt("r root", dir, "Path to the root package")
-	Gaoler.StringOpt("c config", filepath.Clean(dir+"/gaoler.json"), "Path to the configuration file")
+	rootPath = Gaoler.StringOpt("r root", dir, "Path to the root package")
+	configPath = Gaoler.StringOpt("c config", filepath.Clean(dir+"/gaoler.json"), "Path to the configuration file")
 
 	Gaoler.Spec = "[--config=<config-file>] [--root=<root-package>]"
 
 	Gaoler.Before = middleware.Compute(
 		ctx,
-		setProject(rootPath),
+		initProject(rootPath),
 	)
 
 	Gaoler.Action = func() {

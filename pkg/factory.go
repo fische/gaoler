@@ -4,23 +4,23 @@ type Factory interface {
 	New(packagePath string) (p *Package, nextDirectories []string, err error)
 }
 
-type DefaultFactory struct {
-	SrcPath             string
-	IgnoreVendor        bool
-	ImportCanFail       bool
-	ReturnPseudoPackage bool
+type BasicFactory struct {
+	SrcPath              string
+	IgnoreVendor         bool
+	ImportCanFail        bool
+	IncludePseudoPackage bool
 }
 
-func (d DefaultFactory) New(packagePath string) (p *Package, nextDirectories []string, err error) {
+func (f BasicFactory) New(packagePath string) (p *Package, nextDirectories []string, err error) {
 	if IsPseudoPackage(packagePath) {
-		if d.ReturnPseudoPackage {
+		if f.IncludePseudoPackage {
 			p = New(packagePath)
 		}
 		return
 	}
-	p, err = Import(packagePath, d.SrcPath, d.IgnoreVendor)
+	p, err = Import(packagePath, f.SrcPath, f.IgnoreVendor)
 	if err != nil {
-		if d.ImportCanFail {
+		if f.ImportCanFail {
 			err = nil
 		}
 		return

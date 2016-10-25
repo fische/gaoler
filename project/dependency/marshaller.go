@@ -1,8 +1,13 @@
 package dependency
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-type stateFormat struct {
+	"github.com/fische/gaoler/pkg"
+)
+
+type dependencyFormat struct {
+	Packages *pkg.Set
 	VCS      string
 	Remote   string
 	Revision string
@@ -13,21 +18,22 @@ type setFormat struct {
 	Dependencies map[string]*Dependency
 }
 
-func (s State) encode() interface{} {
-	return stateFormat{
-		VCS:      s.vcs,
-		Remote:   s.remote,
-		Revision: s.revision,
-		Branch:   s.branch,
+func (d Dependency) encode() interface{} {
+	return dependencyFormat{
+		Packages: d.Set,
+		VCS:      d.vcs,
+		Remote:   d.remote,
+		Revision: d.revision,
+		Branch:   d.branch,
 	}
 }
 
-func (s State) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.encode())
+func (d Dependency) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.encode())
 }
 
-func (s State) MarshalYAML() (interface{}, error) {
-	return s.encode(), nil
+func (d Dependency) MarshalYAML() (interface{}, error) {
+	return d.encode(), nil
 }
 
 func (s Set) encode() interface{} {

@@ -36,8 +36,9 @@ func (s *Set) listDir(dir string, fset *token.FileSet, filter func(info os.FileI
 					add, dirs, err := s.Constructor.New(packagePath)
 					if err != nil {
 						return nil, err
+					} else if add != nil {
+						s.Insert(add, true)
 					}
-					s.Insert(add, true)
 					if len(dirs) > 0 {
 						nextDirectories = append(nextDirectories, dirs...)
 					}
@@ -49,12 +50,9 @@ func (s *Set) listDir(dir string, fset *token.FileSet, filter func(info os.FileI
 }
 
 func (s *Set) list(directories []string, fset *token.FileSet) error {
-	if s.Constructor == nil {
-		return errors.New("Could not complete set without a package constructor")
-	}
 	var nextDirectories []string
 	for _, dir := range directories {
-		if filepath.Base(dir) == "testdata" {
+		if filepath.Base(dir) != "testdata" {
 			var filter func(info os.FileInfo) bool
 			if s.Filter != nil {
 				filter = s.Filter.New(dir)
@@ -73,6 +71,9 @@ func (s *Set) list(directories []string, fset *token.FileSet) error {
 }
 
 func (s *Set) ListFrom(srcPath string) error {
+	if s.Constructor == nil {
+		return errors.New("Could not complete set without a package constructor")
+	}
 	return s.list([]string{srcPath}, token.NewFileSet())
 }
 
