@@ -25,12 +25,11 @@ func (s *Set) completeFromSet(o *pkg.Set) error {
 			added := true
 			if dep == nil {
 				dep = New(p)
-			} else if strings.HasPrefix(p.Path(), dep.rootPackage) ||
-				strings.HasPrefix(dep.rootPackage, p.Path()) {
+			} else if strings.HasPrefix(p.Path(), dep.rootPackage) {
 				added = dep.Insert(p, false)
-				if strings.HasPrefix(dep.rootPackage, p.Path()) {
-					dep.rootPackage = p.Path()
-				}
+			} else if strings.HasPrefix(dep.rootPackage, p.Path()) {
+				added = dep.Insert(p, false)
+				dep.rootPackage = p.Path()
 			} else {
 				continue
 			}

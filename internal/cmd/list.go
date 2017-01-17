@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/fatih/color"
 	"github.com/fische/gaoler/internal/cmd/middleware"
@@ -16,20 +17,25 @@ import (
 
 func init() {
 	Gaoler.Command("list", "List project's dependencies from config (unless it does not exist)", func(cmd *cli.Cmd) {
-		list := cmd.BoolOpt("l list", false, "List packages' status for each dependency")
-		update := cmd.BoolOpt("u update", false, "Update project's dependencies compared to the current dependency tree")
+		depRegexpsKey := "dependencies"
 
-		cmd.Spec = "[-l] [-u]"
+		list := cmd.BoolOpt("l list", false, "List packages' status for each dependency")
+		sync := cmd.BoolOpt("s sync", false, "Synchronize with the actual dependency list")
+		dependencies := cmd.StringsArg("DEPENDENCIES", []string{}, "Regular expressions for filtering dependencies")
+
+		cmd.Spec = "[-l] [-s] [DEPENDENCIES...]"
 
 		cmd.Before = middleware.Compute(
 			ctx,
-			initConfig(configPath, config.Load),
+			initConfig(configPath, func() config.Flags { return config.Load }),
+			initRegexps(depRegexpsKey, dependencies),
 		)
 
 		cmd.Action = func() {
+			regexps := ctx.Value(depRegexpsKey).([]*regexp.Regexp)
 			p := ctx.Value("project").(*project.Project)
 			p.OnPackageAdded = func(p *pkg.Package, dep *dependency.Dependency) error {
-				if p.Dir() != "" && !dep.HasOpenedRepository() {
+				if !p.IsVendored() && p.Dir() != "" && !dep.HasOpenedRepository() {
 					if err := dep.OpenRepository(p.Dir()); err == nil {
 						return dep.SetRootPackage()
 					}
@@ -44,14 +50,14 @@ func init() {
 			}
 			if cfg := ctx.Value("config").(*config.Config); cfg != nil {
 				if err := cfg.Load(p); err != nil {
-					fmt.Fprintf(os.Stderr, "Could not load project : %v", err)
+					fmt.Fprintf(os.Stderr, "Could not load project : %v\n", err)
 					cli.Exit(ExitFailure)
 				}
 			} else {
-				*update = true
+				*sync = true
 			}
 
-			if *update {
+			if *sync {
 				s := pkg.NewSet()
 				s.Constructor = &pkg.BasicFactory{
 					SrcPath:              p.RootPath(),
@@ -61,15 +67,13 @@ func init() {
 				}
 				s.Filter = filter.New(false, p.RootPath())
 				if err := s.ListFrom(p.RootPath()); err != nil {
-					fmt.Fprintf(os.Stderr, "Could not list packages : %v", err)
+					fmt.Fprintf(os.Stderr, "Could not list packages : %v\n", err)
 					cli.Exit(ExitFailure)
-				}
-				diff := p.Diff(s)
-				if err := p.Apply(diff); err != nil {
-					fmt.Fprintf(os.Stderr, "Could not apply diff to dependencies : %v", err)
+				} else if err = p.Apply(p.Diff(s)); err != nil {
+					fmt.Fprintf(os.Stderr, "Could not apply diff to dependencies : %v\n", err)
 					cli.Exit(ExitFailure)
-				} else if err := p.MergePackageSet(s); err != nil {
-					fmt.Fprintf(os.Stderr, "Could not merge package set : %v", err)
+				} else if err = p.MergePackageSet(s); err != nil {
+					fmt.Fprintf(os.Stderr, "Could not merge package set : %v\n", err)
 					cli.Exit(ExitFailure)
 				}
 			}
@@ -96,54 +100,56 @@ func init() {
 				out string
 			)
 			for rootPackage, dep := range p.Dependencies() {
-				if *list && newline {
-					out += "\n"
-				} else {
-					newline = true
-				}
-				var (
-					pkgSaved    int
-					pkgVendored int
-					pkgOut      string
-				)
-				for packagePath, p := range dep.Packages() {
-					pkgOut += packageColor("\t%s", packagePath) + packageInfo(" Saved(")
-					if p.IsSaved() {
-						pkgSaved++
-						pkgOut += validColor("✓")
+				if len(regexps) == 0 || checkRegexps(rootPackage, regexps) {
+					if *list && newline {
+						out += "\n"
 					} else {
-						pkgOut += invalidColor("×")
+						newline = true
 					}
-					pkgOut += packageInfo(") Vendored(")
-					if p.IsVendored() {
-						pkgVendored++
-						pkgOut += validColor("✓")
-					} else {
-						pkgOut += invalidColor("×")
+					var (
+						pkgSaved    int
+						pkgVendored int
+						pkgOut      string
+					)
+					for packagePath, p := range dep.Packages() {
+						pkgOut += packageColor("\t%s", packagePath) + packageInfo(" Saved(")
+						if p.IsSaved() {
+							pkgSaved++
+							pkgOut += validColor("✓")
+						} else {
+							pkgOut += invalidColor("×")
+						}
+						pkgOut += packageInfo(") Vendored(")
+						if p.IsVendored() {
+							pkgVendored++
+							pkgOut += validColor("✓")
+						} else {
+							pkgOut += invalidColor("×")
+						}
+						pkgOut += packageInfo(")\n")
 					}
-					pkgOut += packageInfo(")\n")
-				}
-				if *update {
-					if dep.IsSaved() {
-						out += savedDependency("✔ ")
-						saved++
-					} else {
-						out += notsavedDependency("❌ ")
-						notsaved++
+					if *sync {
+						if dep.IsSaved() {
+							out += savedDependency("✔ ")
+							saved++
+						} else {
+							out += notsavedDependency("❌ ")
+							notsaved++
+						}
 					}
-				}
-				out += dependencyColor("%s ", rootPackage) + dependencyInfo("(%d Packages, %d Saved, %d Vendored)\n", len(dep.Packages()), pkgSaved, pkgVendored)
-				if *list {
-					out += pkgOut
+					out += dependencyColor("%s ", rootPackage) + dependencyInfo("(%d Packages, %d Saved, %d Vendored)\n", len(dep.Packages()), pkgSaved, pkgVendored)
+					if *list {
+						out += pkgOut
+					}
 				}
 			}
 			fmt.Print(out)
-			if *update {
+			if *sync {
 				var nl string
 				if newline {
 					nl = "\n"
 				}
-				fmt.Println(nl+"Dependencies: ", savedDependency("%d Saved", saved), notsavedDependency("%d Not Saved", notsaved))
+				fmt.Println(nl+"Dependencies: ", savedDependency("%d Saved", saved), notsavedDependency("%d Unsaved", notsaved))
 			}
 		}
 

@@ -110,6 +110,15 @@ func (s Set) IsVendored() bool {
 	return true
 }
 
+func (s Set) HasVendoredPackage() bool {
+	for _, p := range s.Packages() {
+		if p.IsVendored() {
+			return true
+		}
+	}
+	return false
+}
+
 func (s Set) IsSaved() bool {
 	for _, p := range s.Packages() {
 		if !p.IsSaved() {

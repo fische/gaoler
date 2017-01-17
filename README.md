@@ -54,7 +54,6 @@ Run 'goaler COMMAND --help' for more information on a command.
 
 ```JSON
 {
-  "Name": "github.com/fische/gaoler",
   "Dependencies": {
     "github.com/Sirupsen/logrus": {
       "Remote": "https://github.com/Sirupsen/logrus",
@@ -71,22 +70,32 @@ Run 'goaler COMMAND --help' for more information on a command.
 
 ## Next release (0.4)
 
-* Unit tests
-* E2E tests
+### Commands
+
+* Diff:
+  - be able to get a diff from current config file and current dependency tree
+
+## Suggestion box
+
+### Documentation
+
 * Write a clean documentation
+* Clean README and define conventions
+
+### Tests
+
+* Unit tests
+* Integration tests
+* E2E tests
+
+### Config
+
+* Handle test dependencies
 
 ### Packages
 
 * Logger
 * Error
-
-## Suggestion box
-
-* Clean README and define conventions
-
-### Config
-
-* Split test dependencies from the normal ones
 
 ### Commands
 
@@ -112,3 +121,7 @@ Run 'goaler COMMAND --help' for more information on a command.
 ### Options
 
 * Scripts
+
+### Performance
+
+* Parallelism

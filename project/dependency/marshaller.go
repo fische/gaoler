@@ -8,9 +8,9 @@ import (
 
 type dependencyFormat struct {
 	Packages *pkg.Set
-	VCS      string
-	Remote   string
-	Revision string
+	VCS      string `json:",omitempty" yaml:",omitpempty"`
+	Remote   string `json:",omitempty" yaml:",omitpempty"`
+	Revision string `json:",omitempty" yaml:",omitpempty"`
 	Branch   string `json:",omitempty" yaml:",omitpempty"`
 }
 
@@ -19,13 +19,16 @@ type setFormat struct {
 }
 
 func (d Dependency) encode() interface{} {
-	return dependencyFormat{
+	ret := dependencyFormat{
 		Packages: d.Set,
-		VCS:      d.vcs,
-		Remote:   d.remote,
-		Revision: d.revision,
-		Branch:   d.branch,
 	}
+	if d.State != nil {
+		ret.VCS = d.vcs
+		ret.Remote = d.remote
+		ret.Revision = d.revision
+		ret.Branch = d.branch
+	}
+	return ret
 }
 
 func (d Dependency) MarshalJSON() ([]byte, error) {
