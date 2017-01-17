@@ -17,8 +17,6 @@ import (
 
 func init() {
 	Gaoler.Command("diff", "Establish a diff of the current dependency tree to the config file", func(cmd *cli.Cmd) {
-		depRegexpsKey := "dependencies"
-
 		list := cmd.BoolOpt("l list", false, "List packages diff for each dependency")
 		dependencies := cmd.StringsArg("DEPENDENCIES", []string{}, "Regular expressions for filtering dependencies")
 

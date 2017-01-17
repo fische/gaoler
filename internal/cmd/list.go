@@ -17,8 +17,6 @@ import (
 
 func init() {
 	Gaoler.Command("list", "List project's dependencies from config (unless it does not exist)", func(cmd *cli.Cmd) {
-		depRegexpsKey := "dependencies"
-
 		list := cmd.BoolOpt("l list", false, "List packages' status for each dependency")
 		sync := cmd.BoolOpt("s sync", false, "Synchronize with the actual dependency list")
 		dependencies := cmd.StringsArg("DEPENDENCIES", []string{}, "Regular expressions for filtering dependencies")

@@ -7,6 +7,10 @@ import (
 	"regexp"
 )
 
+const (
+	depRegexpsKey = "dependencies"
+)
+
 func resetDirectory(path string) error {
 	if err := os.RemoveAll(path); err != nil && !os.IsNotExist(err) {
 		return err
